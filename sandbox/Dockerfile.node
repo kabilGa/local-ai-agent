@@ -1,0 +1,15 @@
+FROM node:20-alpine
+
+# Installe les outils AVANT de basculer en non-root
+# Sans ça, npx essaie de les télécharger au runtime — impossible avec network=none
+RUN npm install -g \
+    eslint@9.5.0 \
+    jest@29.7.0 \
+    prettier@3.3.2 \
+    --no-fund --no-audit
+
+RUN addgroup -g 10001 sandbox && \
+    adduser -u 10001 -G sandbox -s /bin/false -D sandbox
+
+WORKDIR /workspace
+USER sandbox

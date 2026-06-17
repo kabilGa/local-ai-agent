@@ -1,0 +1,11 @@
+.vscode/
+node_modules/
+src/
+out/
+esbuild.js
+tsconfig.json
+package-lock.json
+*.vsix
+.DS_Store
+dist/**/*.map
+# media/ and dist/ are intentionally NOT listed here — they must be in the package

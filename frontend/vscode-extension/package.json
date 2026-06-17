@@ -1,0 +1,182 @@
+{
+  "name": "local-ai-agent",
+  "displayName": "Local AI Agent",
+  "description": "Local open-source AI assistant for coding, debugging and security — runs entirely on-premise.",
+  "version": "0.1.0",
+  "publisher": "local-ai-team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/local-ai-team/local-ai-agent"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Programming Languages",
+    "Linters",
+    "Other"
+  ],
+  "keywords": ["ai", "coding", "debugging", "security", "local", "open-source"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "icon": "resources/icon.png",
+  "contributes": {
+    "configuration": {
+      "title": "Local AI Agent",
+      "properties": {
+        "localAiAgent.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "description": "URL of the AI Agent API Gateway (e.g. http://localhost:8000)."
+        },
+        "localAiAgent.apiToken": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "JWT token for API authentication. Paste the token you get from the web portal login here. Keep this secret — do not commit it."
+        },
+        "localAiAgent.explainMode": {
+          "type": "string",
+          "enum": ["novice", "standard", "expert"],
+          "default": "standard",
+          "description": "Default explanation level for AI responses."
+        },
+        "localAiAgent.defaultProject": {
+          "type": "string",
+          "default": "",
+          "description": "Default project/repo ID to use when no project is explicitly selected."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "localAiAgent.openChat",
+        "title": "Open AI Agent Chat",
+        "category": "AI Agent",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "localAiAgent.askAboutFile",
+        "title": "Ask AI Agent About This File",
+        "category": "AI Agent",
+        "icon": "$(search)"
+      },
+      {
+        "command": "localAiAgent.askAboutSelection",
+        "title": "Ask AI Agent About Selected Code",
+        "category": "AI Agent",
+        "icon": "$(lightbulb)"
+      },
+      {
+        "command": "localAiAgent.runSecurityScan",
+        "title": "Run Security Scan on Current File",
+        "category": "AI Agent",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "localAiAgent.runSecurityScanWorkspace",
+        "title": "Run Security Scan on Entire Workspace",
+        "category": "AI Agent",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "localAiAgent.clearDiagnostics",
+        "title": "Clear AI Agent Diagnostics",
+        "category": "AI Agent",
+        "icon": "$(clear-all)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "localAiAgentSidebar",
+          "title": "AI Agent",
+          "icon": "$(sparkle)"
+        }
+      ]
+    },
+    "views": {
+      "localAiAgentSidebar": [
+        {
+          "type": "webview",
+          "id": "localAiAgent.chatView",
+          "name": "Chat"
+        }
+      ]
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "localAiAgent.askAboutFile",
+          "group": "localAiAgent@1",
+          "when": "editorIsOpen"
+        },
+        {
+          "command": "localAiAgent.askAboutSelection",
+          "group": "localAiAgent@2",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "localAiAgent.runSecurityScan",
+          "group": "localAiAgent@3",
+          "when": "editorIsOpen"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "localAiAgent.askAboutFile",
+          "group": "localAiAgent@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "localAiAgent.openChat"
+        },
+        {
+          "command": "localAiAgent.runSecurityScan"
+        },
+        {
+          "command": "localAiAgent.runSecurityScanWorkspace"
+        },
+        {
+          "command": "localAiAgent.clearDiagnostics"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "localAiAgent.openChat",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a"
+      },
+      {
+        "command": "localAiAgent.askAboutSelection",
+        "key": "ctrl+shift+q",
+        "mac": "cmd+shift+q",
+        "when": "editorHasSelection"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "node esbuild.js --production",
+    "watch": "node esbuild.js --watch",
+    "compile": "node esbuild.js",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package --no-dependencies"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "~5.4.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "esbuild": "^0.21.0",
+    "@vscode/vsce": "^2.26.0"
+  }
+}

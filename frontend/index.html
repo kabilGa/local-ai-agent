@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local AI Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --void:#0a0e14; --panel:#121821; --panel2:#0e141d; --line:#1f2935;
+    --mist:#8b9bb4; --bone:#e6ecf5; --pulse:#5eead4; --amber:#f5b454; --rose:#f97b8b;
+    --pulse-dim:rgba(94,234,212,0.12);
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  html, body { height: 100%; }
+  body { font-family: 'Inter', sans-serif; background: var(--void); color: var(--bone);
+    min-height: 100vh; overflow-x: hidden; position: relative; }
+  .bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+  .bg .grid { position: absolute; inset: -2px;
+    background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 44px 44px; opacity: 0.25;
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%); }
+  .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.5; }
+  .orb.a { width: 420px; height: 420px; background: radial-gradient(circle, #134e4a, transparent 70%);
+           top: -120px; left: -80px; animation: drift1 22s ease-in-out infinite; }
+  .orb.b { width: 360px; height: 360px; background: radial-gradient(circle, #1e3a5f, transparent 70%);
+           top: 20%; right: -100px; animation: drift2 28s ease-in-out infinite; }
+  @keyframes drift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(60px,40px)} }
+  @keyframes drift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-50px,30px)} }
+  .shell { position: relative; z-index: 1; max-width: 860px; margin: 0 auto;
+           min-height: 100vh; display: flex; flex-direction: column; padding: 0 20px; }
+  header { padding: 26px 4px 18px; display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 11px; }
+  .logo .mark { width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+    background: linear-gradient(135deg, #134e4a, #0a0e14); border: 1px solid var(--line); position: relative; overflow: hidden; }
+  .logo .mark::after { content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 50%, var(--pulse), transparent 60%);
+    opacity: 0.5; animation: breathe 3s ease-in-out infinite; }
+  @keyframes breathe { 0%,100%{opacity:0.25; transform:scale(0.85)} 50%{opacity:0.6; transform:scale(1.05)} }
+  .logo h1 { font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
+  .logo .tag { font-size: 11px; color: var(--mist); font-family: 'JetBrains Mono', monospace; margin-top: 1px; }
+  .status { margin-left: auto; display: flex; align-items: center; gap: 7px;
+            font-size: 12px; color: var(--mist); font-family: 'JetBrains Mono', monospace; }
+  .status .dot { width: 7px; height: 7px; border-radius: 50%; background: #4b5563; }
+  .status .dot.on { background: var(--pulse); box-shadow: 0 0 10px var(--pulse); animation: pulse 2s infinite; }
+  .status .dot.off { background: var(--rose); box-shadow: 0 0 10px var(--rose); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--line) 20%, var(--line) 80%, transparent); }
+  .rail { display: flex; gap: 8px; padding: 16px 4px 8px; }
+  .rail .t { flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px;
+    background: var(--panel2); transition: all 0.4s cubic-bezier(0.4,0,0.2,1); position: relative; overflow: hidden; }
+  .rail .t .lbl { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: var(--mist); }
+  .rail .t .mdl { font-size: 11px; color: #5b6675; margin-top: 3px; font-family: 'JetBrains Mono', monospace;
+                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rail .t.active { border-color: var(--accent, var(--pulse)); background: var(--panel); }
+  .rail .t.active .lbl { color: var(--accent, var(--pulse)); }
+  .rail .t.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+    background: var(--accent, var(--pulse)); box-shadow: 0 0 12px var(--accent, var(--pulse)); }
+  .rail .t.fast.active { --accent: var(--pulse); }
+  .rail .t.balanced.active { --accent: var(--amber); }
+  .rail .t.heavy.active { --accent: var(--rose); }
+  .chat { flex: 1; padding: 18px 0 12px; display: flex; flex-direction: column; gap: 18px; }
+  .turn { animation: rise 0.45s cubic-bezier(0.2,0.8,0.2,1); }
+  @keyframes rise { from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:translateY(0)} }
+  .turn .role { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em;
+                color: var(--mist); margin-bottom: 7px; display: flex; align-items: center; gap: 7px; }
+  .turn.you .role { color: #6b7689; }
+  .turn .role .glyph { color: var(--pulse); }
+  .bubble.user { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px;
+    padding: 13px 16px; font-size: 15px; line-height: 1.6; color: #cdd6e4; }
+  .bubble.agent { background: linear-gradient(180deg, var(--panel), var(--panel2));
+    border: 1px solid var(--line); border-radius: 12px; padding: 0; overflow: hidden; }
+  .agent-meta { display: flex; align-items: center; gap: 8px; padding: 11px 16px; border-bottom: 1px solid var(--line); }
+  .pill { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 500;
+          letter-spacing: 0.06em; padding: 3px 9px; border-radius: 6px; }
+  .pill.fast { background: var(--pulse-dim); color: var(--pulse); }
+  .pill.balanced { background: rgba(245,180,84,0.12); color: var(--amber); }
+  .pill.heavy { background: rgba(249,123,139,0.12); color: var(--rose); }
+  .pill.model { background: #161d27; color: var(--mist); }
+  .pill.err { background: rgba(249,123,139,0.15); color: var(--rose); }
+  .agent-meta .lat { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5b6675; }
+  .content { padding: 15px 16px 17px; font-size: 15px; line-height: 1.72; color: #d6deea; }
+  .content p { margin-bottom: 11px; } .content p:last-child { margin-bottom: 0; }
+  .content h1,.content h2,.content h3 { font-family: 'Space Grotesk', sans-serif;
+       margin: 16px 0 9px; font-size: 16px; font-weight: 600; color: var(--bone); }
+  .content ul,.content ol { margin: 9px 0 12px 8px; padding-left: 18px; }
+  .content li { margin-bottom: 6px; } .content li::marker { color: var(--pulse); }
+  .content strong { color: var(--bone); font-weight: 600; }
+  .content a { color: var(--pulse); }
+  .content pre { background: #0b1017 !important; border: 1px solid var(--line);
+       border-radius: 9px; padding: 13px 15px; overflow-x: auto; margin: 11px 0; }
+  .content code { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  .content :not(pre) > code { background: #161d27; color: var(--pulse); padding: 2px 6px; border-radius: 5px; font-size: 12.5px; }
+  .content pre code { background: none; padding: 0; color: #c9d4e3; }
+  .content .katex { color: var(--bone); font-size: 1.04em; }
+  .thinking { padding: 15px 16px; display: flex; align-items: center; gap: 10px; color: var(--mist); }
+  .thinking .bars { display: flex; gap: 4px; }
+  .thinking .bars span { width: 3px; height: 14px; background: var(--pulse); border-radius: 2px; animation: eq 1s ease-in-out infinite; }
+  .thinking .bars span:nth-child(2){animation-delay:0.15s} .thinking .bars span:nth-child(3){animation-delay:0.3s} .thinking .bars span:nth-child(4){animation-delay:0.45s}
+  @keyframes eq { 0%,100%{height:5px;opacity:0.4} 50%{height:14px;opacity:1} }
+  .thinking .label { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .composer { position: sticky; bottom: 0; padding: 12px 0 22px; background: linear-gradient(180deg, transparent, var(--void) 22%); }
+  .composer-inner { display: flex; gap: 10px; align-items: flex-end;
+       background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 8px 8px 8px 16px; transition: border-color 0.25s; }
+  .composer-inner:focus-within { border-color: #2d3a4d; box-shadow: 0 0 0 3px rgba(94,234,212,0.06); }
+  textarea { flex: 1; background: none; border: none; resize: none; color: var(--bone);
+       font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.5; padding: 9px 0; max-height: 180px; outline: none; }
+  textarea::placeholder { color: #4b5563; }
+  .send { width: 40px; height: 40px; border-radius: 10px; border: none; cursor: pointer; flex-shrink: 0;
+    background: var(--pulse); color: #062420; display: grid; place-items: center; transition: transform 0.15s, opacity 0.2s; }
+  .send:hover { transform: translateY(-1px); }
+  .send:disabled { background: #2d3a4d; color: #5b6675; cursor: not-allowed; transform: none; }
+  .send svg { width: 18px; height: 18px; }
+  .composer-hint { text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #4b5563; margin-top: 9px; }
+  .empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 20px; gap: 18px; }
+  .empty h2 { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 600; letter-spacing: -0.02em;
+       background: linear-gradient(120deg, var(--bone), var(--pulse)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .empty p { color: var(--mist); font-size: 14px; max-width: 380px; line-height: 1.6; }
+  .seeds { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 540px; }
+  .seed { font-size: 13px; color: #aab6c8; background: var(--panel); border: 1px solid var(--line);
+       border-radius: 9px; padding: 9px 13px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+  .seed:hover { border-color: #2d3a4d; color: var(--bone); transform: translateY(-1px); }
+</style>
+</head>
+<body>
+<div class="bg"><div class="grid"></div><div class="orb a"></div><div class="orb b"></div></div>
+<div class="shell">
+  <header>
+    <div class="logo">
+      <div class="mark"></div>
+      <div><h1>Local AI Agent</h1><div class="tag">running on your machine</div></div>
+    </div>
+    <div class="status"><span class="dot" id="dot"></span><span id="statusText">connecting</span><button id="newChat" onclick="newChat()" title="Start a new conversation" style="margin-left:12px;background:var(--panel);border:1px solid var(--line);color:var(--mist);font-family:inherit;font-size:11px;padding:4px 10px;border-radius:7px;cursor:pointer;">+ new chat</button></div>
+  </header>
+  <div class="divider"></div>
+  <div class="rail" id="rail">
+    <div class="t fast" data-tier="FAST"><div class="lbl">FAST</div><div class="mdl" data-model>—</div></div>
+    <div class="t balanced" data-tier="BALANCED"><div class="lbl">BALANCED</div><div class="mdl" data-model>—</div></div>
+    <div class="t heavy" data-tier="HEAVY"><div class="lbl">HEAVY</div><div class="mdl" data-model>—</div></div>
+  </div>
+  <div class="chat" id="chat">
+    <div class="empty" id="empty">
+      <h2>Ask. It routes itself.</h2>
+      <p>Your question is analyzed and sent to the right local model — fast ones for simple asks, stronger ones for hard problems. Nothing leaves your machine.</p>
+      <div class="seeds">
+        <span class="seed" onclick="seed(this)">What does len() do in Python?</span>
+        <span class="seed" onclick="seed(this)">Write a function to check if a number is prime</span>
+        <span class="seed" onclick="seed(this)">Explain the Gaussian integral with the math</span>
+        <span class="seed" onclick="seed(this)">Audit a login function for SQL injection</span>
+      </div>
+    </div>
+  </div>
+  <div class="composer">
+    <div class="composer-inner">
+      <textarea id="prompt" rows="1" placeholder="Ask anything..." oninput="grow(this)"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"></textarea>
+      <button class="send" id="send" onclick="send()" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+    <div class="composer-hint">enter to send · shift+enter for newline · everything runs locally</div>
+  </div>
+</div>
+<script>
+  marked.setOptions({ breaks: true, gfm: true });
+  // Each page load is one conversation. This id ties messages together for memory.
+  const SESSION_ID = 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
+  fetch('/health').then(r => r.json()).then(() => { dot.className='dot on'; statusText.textContent='connected'; })
+    .catch(() => { dot.className='dot off'; statusText.textContent='offline'; });
+  fetch('/router/models').then(r => r.json()).then(models => {
+    document.querySelectorAll('.rail .t').forEach(el => {
+      const tier = el.dataset.tier;
+      if (models[tier]) el.querySelector('[data-model]').textContent = models[tier].model;
+    });
+  }).catch(()=>{});
+  async function newChat(){
+    try { await fetch('/session/clear?session_id=' + encodeURIComponent(SESSION_ID), {method:'POST'}); } catch(e){}
+    location.reload();
+  }
+  function highlightTier(tier){ document.querySelectorAll('.rail .t').forEach(el => el.classList.toggle('active', el.dataset.tier===tier)); }
+  function grow(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,180)+'px'; }
+  function seed(el){ document.getElementById('prompt').value=el.textContent; send(); }
+  function turn(role, cssClass){
+    const empty=document.getElementById('empty'); if(empty) empty.remove();
+    const wrap=document.createElement('div'); wrap.className='turn '+cssClass;
+    const glyph = cssClass==='you' ? '›' : '<span class="glyph">◆</span>';
+    wrap.innerHTML='<div class="role">'+glyph+' '+role+'</div>';
+    document.getElementById('chat').appendChild(wrap); return wrap;
+  }
+  function normalizeMath(text){
+    // 1. Collapse $$ that sit alone on their own lines into a single-line block
+    //    (small models often write $$\n formula \n$$ which KaTeX won't catch)
+    text=text.replace(/\$\$\s*\n([\s\S]+?)\n\s*\$\$/g,(_,m)=>'$$'+m.trim()+'$$');
+    // 2. Convert \[ ... \] and \( ... \) to $$ / $
+    text=text.replace(/\\\[(.+?)\\\]/gs,(_,m)=>'$$'+m.trim()+'$$');
+    text=text.replace(/\\\((.+?)\\\)/gs,(_,m)=>'$'+m.trim()+'$');
+    // 3. A line that is just [ ...latex... ] -> $$ ... $$
+    text=text.replace(/(^|\n)\s*\[\s*([\s\S]+?)\s*\]\s*(?=\n|$)/g,(full,pre,m)=>/\\[a-zA-Z]+|[\^_]\{|\\frac|\\sum|\\int/.test(m)?pre+'$$'+m.trim()+'$$':full);
+    // 4. inline ( ...latex... ) -> $ ... $
+    text=text.replace(/\(\s*([^()]*?(?:\\[a-zA-Z]+|[\^_]\{)[^()]*?)\s*\)/g,(full,m)=>'$'+m.trim()+'$');
+    // 5. tidy a stray " , dx" -> " \, dx" inside likely-math (harmless cosmetic)
+    return text;
+  }
+  function renderInto(bubble, data){
+    const tierClass=(data.tier||'').toLowerCase();
+    let meta='';
+    if(data.tier) meta+='<span class="pill '+tierClass+'">'+data.tier+'</span>';
+    if(data.model_used) meta+='<span class="pill model">'+data.model_used+'</span>';
+    if(data.latency_s!=null) meta+='<span class="lat">'+data.latency_s+'s</span>';
+    const content=document.createElement('div'); content.className='content';
+    content.innerHTML=marked.parse(normalizeMath(data.answer||''));
+    bubble.innerHTML='<div class="agent-meta">'+meta+'</div>'; bubble.appendChild(content);
+    content.querySelectorAll('pre code').forEach(b=>{try{hljs.highlightElement(b);}catch(e){}});
+    try{ renderMathInElement(content,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false}); }catch(e){}
+  }
+  async function send(){
+    const promptEl=document.getElementById('prompt'); const text=promptEl.value.trim(); if(!text) return;
+    const btn=document.getElementById('send'); btn.disabled=true;
+    const uTurn=turn('you','you'); const uBubble=document.createElement('div');
+    uBubble.className='bubble user'; uBubble.textContent=text; uTurn.appendChild(uBubble);
+    promptEl.value=''; grow(promptEl);
+    const aTurn=turn('agent','agent'); const aBubble=document.createElement('div'); aBubble.className='bubble agent';
+    aBubble.innerHTML='<div class="thinking"><div class="bars"><span></span><span></span><span></span><span></span></div><span class="label">routing & generating…</span></div>';
+    aTurn.appendChild(aBubble); aBubble.scrollIntoView({behavior:'smooth',block:'end'});
+    try{
+      const resp=await fetch('/agent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:text, session_id:SESSION_ID})});
+      const data=await resp.json();
+      if(data.tier) highlightTier(data.tier);
+      if(data.success===false){
+        aBubble.innerHTML='<div class="agent-meta"><span class="pill err">error</span></div><div class="content"><p>'+(data.error||'Something went wrong.')+'</p></div>';
+      } else { renderInto(aBubble,data); }
+    }catch(e){
+      aBubble.innerHTML='<div class="agent-meta"><span class="pill err">offline</span></div><div class="content"><p>Could not reach the gateway. Is it running?</p></div>';
+    }finally{ btn.disabled=false; aBubble.scrollIntoView({behavior:'smooth',block:'end'}); }
+  }
+</script>
+</body>
+</html>

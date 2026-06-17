@@ -1,0 +1,24 @@
+{"time": "2026-06-15 08:47:34", "event": "agent_request", "prompt_preview": "tell me about python", "length": 20}
+{"time": "2026-06-15 08:47:48", "event": "agent_answered", "model": "qwen2.5-coder:1.5b", "tier": "FAST", "latency_s": 14.52}
+{"time": "2026-06-15 08:49:38", "event": "agent_request", "prompt_preview": "wrtie me a math formula", "length": 23}
+{"time": "2026-06-15 08:49:49", "event": "agent_answered", "model": "qwen2.5-coder:1.5b", "tier": "FAST", "latency_s": 11.14}
+{"time": "2026-06-15 09:56:39", "event": "agent_request", "prompt_preview": "no i want a formula with exponentials and sommation and integrals", "length": 65}
+{"time": "2026-06-15 09:56:53", "event": "agent_answered", "model": "qwen2.5-coder:1.5b", "tier": "FAST", "latency_s": 13.88}
+{"time": "2026-06-15 10:11:36", "event": "agent_request", "prompt_preview": "Explain the Gaussian integral with the math", "length": 43}
+{"time": "2026-06-15 10:12:25", "event": "agent_answered", "model": "qwen2.5-coder:1.5b", "tier": "FAST", "latency_s": 49.62}
+{"time": "2026-06-15 10:24:21", "event": "agent_request", "prompt_preview": "Explain the Gaussian integral with the math", "length": 43}
+{"time": "2026-06-15 10:25:13", "event": "agent_answered", "model": "qwen2.5-coder:1.5b", "tier": "FAST", "latency_s": 52.09}
+{"time": "2026-06-15 10:27:07", "event": "agent_request", "prompt_preview": "how to fix high ms", "length": 18}
+{"time": "2026-06-15 10:27:34", "event": "agent_answered", "model": "qwen2.5-coder:1.5b", "tier": "FAST", "latency_s": 27.15}
+{"time": "2026-06-15 10:27:52", "event": "agent_request", "prompt_preview": "answer in arabic", "length": 16}
+{"time": "2026-06-15 10:27:55", "event": "agent_answered", "model": "qwen2.5-coder:1.5b", "tier": "FAST", "latency_s": 3.43}
+{"time": "2026-06-15 10:28:27", "event": "agent_request", "prompt_preview": "wat ?", "length": 5}
+{"time": "2026-06-15 10:28:30", "event": "agent_answered", "model": "qwen2.5-coder:1.5b", "tier": "FAST", "latency_s": 3.11}
+{"time": "2026-06-15 10:43:46", "event": "agent_request", "prompt_preview": "write me a code that verifies if a number is prime or not", "length": 57}
+{"time": "2026-06-15 10:43:55", "event": "agent_answered", "model": "qwen2.5-coder:1.5b", "tier": "FAST", "latency_s": 8.13}
+{"time": "2026-06-17 16:43:07", "event": "agent_request", "session": "sess-1781710960277-urut08", "prompt_preview": "my name is adam and i like ^pyhotn"}
+{"time": "2026-06-17 16:43:17", "event": "agent_answered", "session": "sess-1781710960277-urut08", "model": "qwen2.5-coder:1.5b", "tier": "FAST", "latency_s": 9.37}
+{"time": "2026-06-17 16:43:25", "event": "agent_request", "session": "sess-1781710960277-urut08", "prompt_preview": "what is my name ?"}
+{"time": "2026-06-17 16:43:36", "event": "agent_answered", "session": "sess-1781710960277-urut08", "model": "qwen2.5-coder:3b", "tier": "BALANCED", "latency_s": 11.71}
+{"time": "2026-06-17 16:43:50", "event": "agent_request", "session": "sess-1781710960277-urut08", "prompt_preview": "what do i like ?"}
+{"time": "2026-06-17 16:43:55", "event": "agent_answered", "session": "sess-1781710960277-urut08", "model": "qwen2.5-coder:3b", "tier": "BALANCED", "latency_s": 5.09}

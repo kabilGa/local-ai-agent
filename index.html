@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local AI Agent</title>
+
+<!-- KaTeX: renders math/LaTeX like $x^2$ into proper symbols -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<!-- Marked: turns markdown (code blocks, **bold**, lists) into formatted HTML -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<!-- Highlight.js: colors code blocks -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f7f7f5; --card: #ffffff; --border: #e4e4e1; --text: #1a1a1a;
+    --muted: #888; --accent: #1a1a1a;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; padding: 28px 16px 60px;
+  }
+  .wrap { width: 100%; max-width: 760px; }
+  header { margin-bottom: 20px; }
+  h1 { font-size: 22px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #999; display: inline-block; }
+  .dot.on { background: #21a366; }
+  .dot.off { background: #d23; }
+  .sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  .chat { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+  .msg { display: flex; gap: 10px; }
+  .msg .who { font-size: 12px; font-weight: 600; color: var(--muted); min-width: 52px; padding-top: 2px; }
+  .bubble {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; flex: 1; overflow-x: auto;
+  }
+  .msg.user .bubble { background: #f0f0ee; }
+  .meta {
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #f0f0ee;
+  }
+  .badge { font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
+  .b-fast { background: #e1f5ee; color: #0f6e56; }
+  .b-balanced { background: #e6f1fb; color: #185fa5; }
+  .b-heavy { background: #faeeda; color: #854f0b; }
+  .b-model { background: #f0f0ee; color: #555; }
+  .b-err { background: #fceaea; color: #a32d2d; }
+  .meta .time { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+  /* Answer content formatting */
+  .content { font-size: 15px; line-height: 1.7; }
+  .content p { margin-bottom: 10px; }
+  .content h1, .content h2, .content h3 { margin: 14px 0 8px; font-size: 16px; }
+  .content ul, .content ol { margin: 8px 0 10px 22px; }
+  .content li { margin-bottom: 4px; }
+  .content pre {
+    background: #f6f6f4; border: 1px solid #ececea; border-radius: 8px;
+    padding: 12px 14px; overflow-x: auto; margin: 10px 0;
+  }
+  .content code {
+    font-family: "SF Mono", Monaco, Consolas, monospace; font-size: 13px;
+  }
+  .content :not(pre) > code {
+    background: #f0f0ee; padding: 1px 5px; border-radius: 4px;
+  }
+  .content pre code { background: none; padding: 0; }
+
+  .input-area { position: sticky; bottom: 0; background: var(--bg); padding-top: 8px; }
+  .input-row { display: flex; gap: 8px; }
+  textarea {
+    flex: 1; font-family: inherit; font-size: 15px; padding: 13px 14px;
+    border: 1px solid #ccc; border-radius: 12px; resize: none; min-height: 52px;
+    max-height: 200px; background: var(--card);
+  }
+  textarea:focus { outline: none; border-color: #888; }
+  button {
+    font-family: inherit; font-size: 15px; font-weight: 500; padding: 0 24px;
+    border: none; border-radius: 12px; background: var(--accent); color: #fff; cursor: pointer;
+  }
+  button:disabled { background: #bbb; cursor: not-allowed; }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 6px; text-align: center; }
+
+  .examples { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+  .chip {
+    font-size: 13px; padding: 6px 12px; border-radius: 8px; background: var(--card);
+    border: 1px solid var(--border); color: #444; cursor: pointer;
+  }
+  .chip:hover { background: #f0f0ee; }
+  .typing { color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="dot" id="statusDot"></span> Local AI Agent</h1>
+    <div class="sub" id="statusText">Connecting...</div>
+  </header>
+
+  <div class="examples" id="examples">
+    <span class="chip" onclick="useExample(this)">What does len() do in Python?</span>
+    <span class="chip" onclick="useExample(this)">Write a function to check if a number is prime</span>
+    <span class="chip" onclick="useExample(this)">Explain the quadratic formula with the math</span>
+  </div>
+
+  <div class="chat" id="chat"></div>
+
+  <div class="input-area">
+    <div class="input-row">
+      <textarea id="prompt" placeholder="Ask anything..." rows="1"
+        oninput="autoGrow(this)"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"></textarea>
+      <button id="sendBtn" onclick="send()">Send</button>
+    </div>
+    <div class="hint">Press Enter to send, Shift+Enter for a new line</div>
+  </div>
+</div>
+
+<script>
+  // ── Check if the gateway is alive, show green/red dot ──
+  fetch('/health').then(r => r.json()).then(d => {
+    document.getElementById('statusDot').className = 'dot on';
+    document.getElementById('statusText').textContent = 'Connected and ready';
+  }).catch(() => {
+    document.getElementById('statusDot').className = 'dot off';
+    document.getElementById('statusText').textContent = 'Gateway not reachable';
+  });
+
+  function autoGrow(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+  }
+
+  function useExample(chip) {
+    document.getElementById('prompt').value = chip.textContent;
+    send();
+  }
+
+  function addMessage(who, cssClass) {
+    const chat = document.getElementById('chat');
+    const msg = document.createElement('div');
+    msg.className = 'msg ' + cssClass;
+    msg.innerHTML = '<div class="who">' + who + '</div><div class="bubble"></div>';
+    chat.appendChild(msg);
+    return msg.querySelector('.bubble');
+  }
+
+  // ── Render answer: markdown + code highlighting + LaTeX math ──
+  function renderAnswer(bubble, data) {
+    let meta = '';
+    if (data.tier) {
+      const cls = 'b-' + data.tier.toLowerCase();
+      meta += '<span class="badge ' + cls + '">' + data.tier + '</span>';
+    }
+    if (data.model_used) meta += '<span class="badge b-model">' + data.model_used + '</span>';
+    if (data.latency_s != null) meta += '<span class="time">' + data.latency_s + 's</span>';
+
+    const content = document.createElement('div');
+    content.className = 'content';
+    // 1. markdown -> HTML
+    content.innerHTML = marked.parse(data.answer || '');
+
+    bubble.innerHTML = (meta ? '<div class="meta">' + meta + '</div>' : '');
+    bubble.appendChild(content);
+
+    // 2. color the code blocks
+    content.querySelectorAll('pre code').forEach(block => {
+      try { hljs.highlightElement(block); } catch(e) {}
+    });
+    // 3. render LaTeX math ($...$ and $$...$$)
+    try {
+      renderMathInElement(content, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+          {left: '\\(', right: '\\)', display: false},
+          {left: '\\[', right: '\\]', display: true}
+        ],
+        throwOnError: false
+      });
+    } catch(e) {}
+  }
+
+  async function send() {
+    const promptEl = document.getElementById('prompt');
+    const prompt = promptEl.value.trim();
+    if (!prompt) return;
+
+    const btn = document.getElementById('sendBtn');
+    btn.disabled = true;
+    document.getElementById('examples').style.display = 'none';
+
+    // show the user's message
+    const userBubble = addMessage('You', 'user');
+    userBubble.textContent = prompt;
+    promptEl.value = '';
+    autoGrow(promptEl);
+
+    // show a "thinking" placeholder
+    const aiBubble = addMessage('Agent', 'agent');
+    aiBubble.innerHTML = '<span class="typing">Thinking...</span>';
+    aiBubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+    try {
+      const resp = await fetch('/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      const data = await resp.json();
+
+      if (data.success === false) {
+        aiBubble.innerHTML = '<div class="meta"><span class="badge b-err">error</span></div>'
+          + '<div class="content">' + (data.error || 'Something went wrong') + '</div>';
+      } else {
+        renderAnswer(aiBubble, data);
+      }
+    } catch (e) {
+      aiBubble.innerHTML = '<div class="meta"><span class="badge b-err">error</span></div>'
+        + '<div class="content">Could not reach the gateway: ' + e.message + '</div>';
+    } finally {
+      btn.disabled = false;
+      aiBubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,359 @@
+openapi: 3.0.3
+info:
+  title: AI Agent API Gateway
+  version: 1.0.0
+  description: Full API contract for the web portal (mock via Prism).
+
+servers:
+  - url: http://localhost:4010
+    description: Prism mock server
+
+paths:
+  /api/auth/login:
+    post:
+      summary: Authenticate user (Keycloak JWT)
+      operationId: postAuthLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Auth session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSession'
+              examples:
+                default:
+                  value:
+                    token: mock-jwt-token
+                    user:
+                      id: u-1
+                      email: dev@local.agent
+                      name: Developer
+                      role: developer
+
+  /api/projects:
+    get:
+      summary: List available projects/repos
+      operationId: getProjects
+      responses:
+        '200':
+          description: Project list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+
+  /api/chat:
+    post:
+      summary: Send a message to the AI agent
+      operationId: postChat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Agent reply
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+              examples:
+                default:
+                  value:
+                    response: Hello! This is a mock response from the local AI agent.
+                    conversationId: conv-1
+
+  /api/conversations:
+    get:
+      summary: List conversation history
+      operationId: getConversations
+      responses:
+        '200':
+          description: Conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConversationSummary'
+
+  /api/conversations/{id}:
+    get:
+      summary: Get conversation detail
+      operationId: getConversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conversation detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationDetail'
+
+  /api/patches/{id}:
+    get:
+      summary: Get patch proposal
+      operationId: getPatch
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Patch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatchProposal'
+
+  /api/patches/{id}/apply:
+    post:
+      summary: Apply a patch (requires explicit confirmation)
+      operationId: applyPatch
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Applied patch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatchProposal'
+
+  /api/patches/{id}/reject:
+    post:
+      summary: Reject a patch
+      operationId: rejectPatch
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Rejected patch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatchProposal'
+
+  /api/reports:
+    get:
+      summary: List reports
+      operationId: getReports
+      responses:
+        '200':
+          description: Reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
+
+  /api/admin/users:
+    get:
+      summary: List users (admin)
+      operationId: getAdminUsers
+      responses:
+        '200':
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminUser'
+
+  /api/admin/settings:
+    get:
+      summary: Platform settings (admin)
+      operationId: getAdminSettings
+      responses:
+        '200':
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSettings'
+
+components:
+  schemas:
+    AuthSession:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/AuthUser'
+
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, developer, auditor, ci-robot]
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        repo:
+          type: string
+        branch:
+          type: string
+
+    ChatRequest:
+      type: object
+      required: [message, project]
+      properties:
+        message:
+          type: string
+        project:
+          type: string
+        explainMode:
+          type: string
+          enum: [novice, standard, expert]
+        conversationId:
+          type: string
+
+    ChatResponse:
+      type: object
+      required: [response, conversationId]
+      properties:
+        response:
+          type: string
+        conversationId:
+          type: string
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceCitation'
+        patch:
+          $ref: '#/components/schemas/PatchProposal'
+
+    SourceCitation:
+      type: object
+      properties:
+        file:
+          type: string
+        lineStart:
+          type: integer
+        lineEnd:
+          type: integer
+        snippet:
+          type: string
+
+    PatchProposal:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        explanation:
+          type: string
+        status:
+          type: string
+          enum: [pending, applied, rejected]
+
+    ConversationSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        projectId:
+          type: string
+        projectName:
+          type: string
+        messageCount:
+          type: integer
+        lastMessageAt:
+          type: string
+          format: date-time
+
+    ConversationDetail:
+      allOf:
+        - $ref: '#/components/schemas/ConversationSummary'
+        - type: object
+          properties:
+            messages:
+              type: array
+              items:
+                type: object
+
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+
+    AdminSettings:
+      type: object
+      properties:
+        maxTokensPerDay:
+          type: integer
+        maxRequestsPerHour:
+          type: integer
+        offlineMode:
+          type: boolean
+        defaultExplainMode:
+          type: string

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!--
+    Content-Security-Policy is REQUIRED for VS Code webviews.
+    It restricts what scripts, styles and connections the webview can make.
+    {{NONCE}} is replaced at runtime with a random token by ChatPanel.ts.
+    'unsafe-inline' is NOT used — nonce-based policy is more secure.
+  -->
+  <meta http-equiv="Content-Security-Policy"
+    content="
+      default-src 'none';
+      style-src {{NONCE}} 'unsafe-inline';
+      script-src 'nonce-{{NONCE}}';
+      font-src data:;
+    "
+  />
+
+  <link rel="stylesheet" href="{{CSS_URI}}" nonce="{{NONCE}}" />
+  <title>AI Agent Chat</title>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header id="header">
+  <div id="header-left">
+    <span id="logo">⚡</span>
+    <span id="app-title">Local AI Agent</span>
+  </div>
+  <div id="header-right">
+    <button id="btn-clear" title="Clear conversation history" aria-label="Clear history">🗑</button>
+  </div>
+</header>
+
+<!-- ── Toolbar: project + explain mode ─────────────────────────────────────── -->
+<div id="toolbar">
+  <div class="toolbar-group">
+    <label for="project-select">Project</label>
+    <select id="project-select" aria-label="Select project">
+      <option value="">Loading…</option>
+    </select>
+  </div>
+  <div class="toolbar-group">
+    <label for="mode-select">Mode</label>
+    <select id="mode-select" aria-label="Explain mode">
+      <option value="novice">Novice</option>
+      <option value="standard" selected>Standard</option>
+      <option value="expert">Expert</option>
+    </select>
+  </div>
+</div>
+
+<!-- ── Messages area ────────────────────────────────────────────────────────── -->
+<main id="messages" role="log" aria-live="polite" aria-label="Conversation messages">
+  <!-- Welcome message shown before any chat -->
+  <div class="message assistant welcome" id="welcome-message">
+    <div class="avatar">🤖</div>
+    <div class="bubble">
+      <p><strong>Hello!</strong> I'm your local AI coding assistant.</p>
+      <p>Ask me anything about your code, paste an error, or right-click a file in the editor and choose <em>"Ask AI Agent"</em>.</p>
+      <p class="hint">All processing runs locally — your code never leaves this machine.</p>
+    </div>
+  </div>
+</main>
+
+<!-- ── Typing indicator ──────────────────────────────────────────────────────── -->
+<div id="typing-indicator" class="hidden" aria-label="AI is thinking" role="status">
+  <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+</div>
+
+<!-- ── Input area ───────────────────────────────────────────────────────────── -->
+<footer id="input-area">
+  <div id="input-wrapper">
+    <textarea
+      id="message-input"
+      placeholder="Ask about your code…"
+      rows="2"
+      aria-label="Type your message"
+      aria-multiline="true"
+    ></textarea>
+    <button id="btn-send" title="Send message (Enter)" aria-label="Send message">
+      <span>↑</span>
+    </button>
+  </div>
+  <div id="input-hint">Enter to send · Shift+Enter for new line</div>
+</footer>
+
+<script nonce="{{NONCE}}">
+  // ── VS Code API bridge ────────────────────────────────────────────────────
+  // acquireVsCodeApi() gives us the postMessage bridge to extension code.
+  // It can only be called ONCE per webview lifetime.
+  const vscode = acquireVsCodeApi()
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let currentConversationId = null
+  let currentProject = ''
+  let isWaiting = false  // prevents sending while AI is responding
+
+  // ── DOM refs ──────────────────────────────────────────────────────────────
+  const messagesEl    = document.getElementById('messages')
+  const inputEl       = document.getElementById('message-input')
+  const sendBtn       = document.getElementById('btn-send')
+  const clearBtn      = document.getElementById('btn-clear')
+  const typingEl      = document.getElementById('typing-indicator')
+  const projectSelect = document.getElementById('project-select')
+  const modeSelect    = document.getElementById('mode-select')
+
+  // ── Send a message ────────────────────────────────────────────────────────
+  function sendMessage() {
+    const text = inputEl.value.trim()
+    if (!text || isWaiting) return
+
+    if (!currentProject) {
+      appendError('Please select a project from the dropdown above.')
+      return
+    }
+
+    appendUserMessage(text)
+    inputEl.value = ''
+    inputEl.style.height = 'auto'
+    isWaiting = true
+    sendBtn.disabled = true
+
+    vscode.postMessage({
+      type: 'sendMessage',
+      text,
+      project: currentProject,
+      conversationId: currentConversationId,
+    })
+  }
+
+  // ── Input event listeners ─────────────────────────────────────────────────
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
+  })
+
+  // Auto-resize textarea as user types
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto'
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px'
+  })
+
+  sendBtn.addEventListener('click', sendMessage)
+
+  clearBtn.addEventListener('click', () => {
+    vscode.postMessage({ type: 'clearHistory' })
+  })
+
+  projectSelect.addEventListener('change', () => {
+    currentProject = projectSelect.value
+  })
+
+  modeSelect.addEventListener('change', () => {
+    vscode.postMessage({ type: 'changeExplainMode', mode: modeSelect.value })
+  })
+
+  // ── Receive messages FROM the extension ───────────────────────────────────
+  window.addEventListener('message', (event) => {
+    const msg = event.data
+
+    switch (msg.type) {
+
+      case 'config':
+        modeSelect.value = msg.explainMode || 'standard'
+        break
+
+      case 'projects':
+        populateProjects(msg.projects)
+        break
+
+      case 'typing':
+        typingEl.classList.toggle('hidden', !msg.value)
+        if (msg.value) scrollToBottom()
+        break
+
+      case 'response':
+        isWaiting = false
+        sendBtn.disabled = false
+        currentConversationId = msg.conversationId
+        appendAssistantMessage(msg.text, msg.sources, msg.patch)
+        break
+
+      case 'error':
+        isWaiting = false
+        sendBtn.disabled = false
+        appendError(msg.message)
+        break
+
+      case 'prefill':
+        inputEl.value = msg.text
+        inputEl.style.height = 'auto'
+        inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px'
+        inputEl.focus()
+        break
+
+      case 'historyCleared':
+        currentConversationId = null
+        messagesEl.innerHTML = ''
+        appendSystemNotice('Conversation history cleared.')
+        break
+
+      case 'patchRejected':
+        // Update the patch card UI if visible
+        const card = document.getElementById('patch-' + msg.patchId)
+        if (card) card.classList.add('rejected')
+        break
+    }
+  })
+
+  // ── Populate project dropdown ─────────────────────────────────────────────
+  function populateProjects(projects) {
+    projectSelect.innerHTML = ''
+    if (!projects || projects.length === 0) {
+      const opt = document.createElement('option')
+      opt.value = ''
+      opt.textContent = 'No projects found'
+      projectSelect.appendChild(opt)
+      return
+    }
+    projects.forEach((p, i) => {
+      const opt = document.createElement('option')
+      opt.value = p.id
+      opt.textContent = p.name + (p.branch ? ` (${p.branch})` : '')
+      if (i === 0) {
+        opt.selected = true
+        currentProject = p.id
+      }
+      projectSelect.appendChild(opt)
+    })
+  }
+
+  // ── Append a user message bubble ──────────────────────────────────────────
+  function appendUserMessage(text) {
+    const div = document.createElement('div')
+    div.className = 'message user'
+    div.innerHTML = `
+      <div class="avatar">👤</div>
+      <div class="bubble"><p>${escapeHtml(text)}</p></div>
+    `
+    messagesEl.appendChild(div)
+    scrollToBottom()
+  }
+
+  // ── Append an AI response bubble (with optional sources + patch) ───────────
+  function appendAssistantMessage(text, sources, patch) {
+    const div = document.createElement('div')
+    div.className = 'message assistant'
+
+    let sourcesHtml = ''
+    if (sources && sources.length > 0) {
+      sourcesHtml = `
+        <div class="sources">
+          <span class="sources-label">📎 Sources</span>
+          ${sources.map(s => `
+            <button class="source-link" data-file="${escapeAttr(s.file)}" data-line="${s.lineStart || 1}">
+              ${escapeHtml(s.file)}${s.lineStart ? ':' + s.lineStart : ''}
+            </button>
+          `).join('')}
+        </div>
+      `
+    }
+
+    let patchHtml = ''
+    if (patch && patch.id) {
+      patchHtml = `
+        <div class="patch-card" id="patch-${escapeAttr(patch.id)}">
+          <div class="patch-header">
+            <span class="patch-icon">📋</span>
+            <span class="patch-title">${escapeHtml(patch.title || 'Patch proposal')}</span>
+          </div>
+          <p class="patch-explanation">${escapeHtml(patch.explanation || '')}</p>
+          <div class="patch-actions">
+            <button class="btn-apply" data-patch-id="${escapeAttr(patch.id)}">
+              ✅ Review &amp; Apply
+            </button>
+            <button class="btn-reject" data-patch-id="${escapeAttr(patch.id)}">
+              ❌ Reject
+            </button>
+          </div>
+        </div>
+      `
+    }
+
+    div.innerHTML = `
+      <div class="avatar">🤖</div>
+      <div class="bubble">
+        <div class="markdown">${simpleMarkdown(text)}</div>
+        ${sourcesHtml}
+        ${patchHtml}
+      </div>
+    `
+
+    // Wire up source citation clicks
+    div.querySelectorAll('.source-link').forEach(btn => {
+      btn.addEventListener('click', () => {
+        vscode.postMessage({
+          type: 'openFile',
+          file: btn.dataset.file,
+          line: parseInt(btn.dataset.line, 10) || 1,
+        })
+      })
+    })
+
+    // Wire up patch buttons
+    div.querySelectorAll('.btn-apply').forEach(btn => {
+      btn.addEventListener('click', () => {
+        vscode.postMessage({ type: 'applyPatch', patchId: btn.dataset.patchId })
+      })
+    })
+    div.querySelectorAll('.btn-reject').forEach(btn => {
+      btn.addEventListener('click', () => {
+        vscode.postMessage({ type: 'rejectPatch', patchId: btn.dataset.patchId })
+        btn.closest('.patch-card').classList.add('rejected')
+      })
+    })
+
+    messagesEl.appendChild(div)
+    scrollToBottom()
+  }
+
+  // ── Append error notice ───────────────────────────────────────────────────
+  function appendError(message) {
+    const div = document.createElement('div')
+    div.className = 'message error-notice'
+    div.innerHTML = `<div class="bubble error-bubble">⚠️ ${escapeHtml(message)}</div>`
+    messagesEl.appendChild(div)
+    scrollToBottom()
+  }
+
+  function appendSystemNotice(message) {
+    const div = document.createElement('div')
+    div.className = 'system-notice'
+    div.textContent = message
+    messagesEl.appendChild(div)
+    scrollToBottom()
+  }
+
+  // ── Scroll messages to bottom ──────────────────────────────────────────────
+  function scrollToBottom() {
+    messagesEl.scrollTop = messagesEl.scrollHeight
+  }
+
+  // ── Simple Markdown → HTML (no external library needed) ───────────────────
+  function simpleMarkdown(text) {
+    return escapeHtml(text)
+      // Code blocks (``` ... ```)
+      .replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) =>
+        `<pre><code class="lang-${lang || 'text'}">${code.trim()}</code></pre>`
+      )
+      // Inline code (`...`)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      // Bold (**...**)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // Italic (*...*)
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      // Newlines → <br>
+      .replace(/\n/g, '<br>')
+  }
+
+  // ── Security helpers ──────────────────────────────────────────────────────
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+  }
+
+  function escapeAttr(str) {
+    return String(str).replace(/"/g, '&quot;')
+  }
+
+  // ── Tell extension we're ready ────────────────────────────────────────────
+  vscode.postMessage({ type: 'ready' })
+  vscode.postMessage({ type: 'listProjects' })
+</script>
+
+</body>
+</html>

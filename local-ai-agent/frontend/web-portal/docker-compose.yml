@@ -1,0 +1,26 @@
+services:
+  web-portal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway-mock
+    environment:
+      - NODE_ENV=production
+
+  api-gateway-mock:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "npm ci && npm run mock"
+    ports:
+      - "4010:4010"
+
+  # Placeholder for real API Gateway (Person 3 / DevSecOps wires this in monorepo)
+  # api-gateway:
+  #   image: api-gateway:latest
+  #   ports:
+  #     - "8000:8000"

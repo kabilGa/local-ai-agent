@@ -1,0 +1,30 @@
+{
+  // This file tells VS Code how to launch the extension in debug mode.
+  // Press F5 inside the vscode-extension folder to start debugging.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Extension (Debug)",
+      "type": "extensionHost",
+      "request": "launch",
+      // Run esbuild to compile TypeScript before launching
+      "preLaunchTask": "npm: compile",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "sourceMaps": true,
+      // The compiled extension entrypoint
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
+    {
+      "name": "Run Extension (Watch)",
+      "type": "extensionHost",
+      "request": "launch",
+      "preLaunchTask": "npm: watch",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "sourceMaps": true,
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"]
+    }
+  ]
+}

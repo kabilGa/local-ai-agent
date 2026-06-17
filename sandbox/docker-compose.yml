@@ -1,0 +1,158 @@
+version: '3.8'
+
+services:
+
+  sandbox_sec:
+    image: alpine:3.19
+    container_name: ia_agent_sandbox_test
+    command: >
+      sh -c "
+      echo '=== TESTS SECURITE ===' &&
+      echo -n '1. Reseau bloque        : ' &&
+      (ping -c 1 8.8.8.8 > /dev/null 2>&1 && echo 'ECHEC !' || echo 'SUCCES (SEC-12)') &&
+      echo -n '2. Filesystem read-only : ' &&
+      (touch /opt/test.txt > /dev/null 2>&1 && echo 'ECHEC !' || echo 'SUCCES (SEC-11)') &&
+      echo -n '3. Tmp accessible       : ' &&
+      (touch /tmp/test.txt && echo 'SUCCES' || echo 'ECHEC !') &&
+      echo -n '4. Non-root             : ' &&
+      ([ $(id -u) -ne 0 ] && echo 'SUCCES (UID='$(id -u)')' || echo 'ECHEC !') &&
+      echo '=== FIN TESTS BASIQUES ==='
+      "
+    network_mode: "none"
+    user: "10001:10001"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  sandbox_evasion:
+    image: alpine:3.19
+    container_name: ia_agent_evasion_tests
+    command: >
+      sh -c "
+      PASS=0; FAIL=0;
+      check() { if eval \"$2\" > /dev/null 2>&1; then echo \"ECHEC  : $1\"; FAIL=$((FAIL+1)); else echo \"SUCCES : $1\"; PASS=$((PASS+1)); fi; }
+
+      echo '=== BATTERIE TESTS EVASION ===' &&
+
+      check 'Pas de ping reseau'        'ping -c 1 8.8.8.8' &&
+      check 'Pas de wget'               'wget -q http://example.com -O /tmp/x' &&
+      check 'Pas de curl'               'curl -s http://example.com' &&
+      check 'Pas ecriture /etc'         'touch /etc/pwned' &&
+      check 'Pas ecriture /usr'         'touch /usr/pwned' &&
+      check 'Pas ecriture /root'        'touch /root/pwned' &&
+      check 'Pas ecriture /'            'touch /pwned' &&
+      check 'Pas chmod sur binaires'    'chmod 777 /bin/sh' &&
+      check 'Pas creation fichier exec' 'echo x > /tmp/x && chmod +x /tmp/x && /tmp/x' &&
+      check 'Pas acces /proc/sysrq'     'echo 1 > /proc/sysrq-trigger' &&
+      check 'Pas lecture /etc/shadow'   'cat /etc/shadow' &&
+      check 'CAP_SETUID absente'        'python3 -c \"import os; os.setuid(0)\"' &&
+
+      echo \"\" &&
+      echo \"Resultat : $PASS SUCCES / $FAIL ECHEC\" &&
+      [ $FAIL -eq 0 ] && echo 'SANDBOX VALIDE' || echo 'ATTENTION : verifier les ECHEC' &&
+      echo '=== FIN TESTS EVASION ==='
+      "
+    network_mode: "none"
+    user: "10001:10001"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  sandbox_python:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    image: sandbox-python:local
+    network_mode: "none"
+    user: "10001:10001"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=128m
+    volumes:
+      - type: bind
+        source: ./workspace
+        target: /workspace
+        read_only: true
+    working_dir: /workspace
+    stop_grace_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  sandbox_node:
+    build:
+      context: .
+      dockerfile: Dockerfile.node
+    image: sandbox-node:local
+    network_mode: "none"
+    user: "10001:10001"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=256m
+    volumes:
+      - type: bind
+        source: ./workspace
+        target: /workspace
+        read_only: true
+    working_dir: /workspace
+    stop_grace_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  sandbox_security:
+    build:
+      context: .
+      dockerfile: Dockerfile.security
+    image: sandbox-security:local
+    network_mode: "none"
+    user: "10001:10001"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=512m
+    volumes:
+      - type: bind
+        source: ./workspace
+        target: /workspace
+        read_only: true
+    working_dir: /workspace
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G

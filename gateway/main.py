@@ -20,7 +20,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from shared.models import AgentResponse
-from gateway.clients import call_router, call_rag, call_sandbox, call_security
+from gateway.clients import call_router, call_rag, call_sandbox, call_security, rag_available
 from gateway import memory
 
 # ── Logging ───────────────────────────────────────────────────────────────────
@@ -103,8 +103,8 @@ def router_models():
 def services_status():
     return {
         "router":   call_router("ping").success,
-        "rag":      call_rag("ping").success,
-        "sandbox":  call_sandbox("print(1)").success,
+        "rag":      rag_available(),
+        "sandbox":  call_sandbox("python", "version").success,
         "security": call_security("dummy").success,
     }
 
@@ -177,8 +177,14 @@ def scan(file_path: str):
 
 
 @app.post("/run")
-def run(code: str):
-    result = call_sandbox(code)
+def run(tool: str, command: str, workspace_path: str = "./workspace"):
+    """
+    Run an allow-listed command in the sandbox.
+      tool:    "python", "node", or "security"
+      command: the command to run (must be on the sandbox's allowlist)
+    Requires Docker on the host running the sandbox.
+    """
+    result = call_sandbox(tool, command, workspace_path)
     if not result.success:
         raise HTTPException(status_code=503, detail=result.error or "Sandbox service unavailable")
     return result.data

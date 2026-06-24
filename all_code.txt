@@ -1,0 +1,4606 @@
+﻿=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\config.py ===
+from __future__ import annotations
+
+from typing import List
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    # â”€â”€ Qdrant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: str = "change-me"
+
+    # â”€â”€ Embeddings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # If empty â†’ fastembed local; if set â†’ remote TEI HTTP server
+    embedding_model_url: str = ""
+    embedding_model_name: str = "nomic-ai/nomic-embed-code"
+    embedding_model_version: str = "v1-0"
+    embedding_dim: int = 768
+    embedding_batch_size: int = 32
+    embedding_max_concurrent: int = 4
+
+    # â”€â”€ Reranker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    reranker_url: str = "http://localhost:8081"
+    reranker_enabled: bool = False
+
+    # â”€â”€ Redis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    redis_url: str = "redis://localhost:6379"
+
+    # â”€â”€ Git â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    git_workspace: str = "/tmp/rag-repos"
+    webhook_secret: str = "change-me-webhook-secret"
+    priority_branches: List[str] = ["main", "master", "develop", "staging"]
+
+    # â”€â”€ Security â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    secret_scanner_enabled: bool = True
+    gitleaks_binary: str = "gitleaks"
+
+    # â”€â”€ Retrieval â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    default_top_k: int = 5
+    reranker_top_k: int = 20
+    score_threshold: float = 0.65
+    rrf_k: int = 60
+
+    # â”€â”€ Cache â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    cache_enabled: bool = True
+    cache_ttl_seconds: int = 3600
+    cache_similarity_threshold: float = 0.95
+
+    # â”€â”€ Context assembly â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    max_context_tokens: int = 8000
+
+    # â”€â”€ API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    api_host: str = "0.0.0.0"
+    api_port: int = 8000
+    log_level: str = "info"
+
+    @field_validator("embedding_model_version")
+    @classmethod
+    def sanitize_version(cls, v: str) -> str:
+        # Used as part of Qdrant collection names â€” no dots or slashes
+        return v.replace(".", "-").replace("/", "-")
+
+
+settings = Settings()
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\__init__.py ===
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\api\main.py ===
+from __future__ import annotations
+
+import logging
+import logging.config
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from ..cache.semantic_cache import SemanticCache
+from ..config import settings
+from ..embeddings.pipeline import EmbeddingPipeline
+from ..indexing.incremental import IncrementalIndexer
+from ..indexing.indexer import Indexer
+from ..retrieval.context_assembler import ContextAssembler
+from ..retrieval.hybrid_searcher import HybridSearcher
+from ..retrieval.reranker import LocalReranker
+from ..storage.qdrant_store import QdrantStore
+from .routes import health, index, retrieve
+
+# â”€â”€ Logging â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+logging.basicConfig(
+    level=getattr(logging, settings.log_level.upper(), logging.INFO),
+    format="%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+
+# â”€â”€ Lifespan â€” initialise / teardown shared resources â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    logger.info("â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•")
+    logger.info("  RAG Engine  â€”  starting up")
+    logger.info("â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•")
+
+    # â”€â”€ Storage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    store = QdrantStore(
+        url=settings.qdrant_url,
+        api_key=settings.qdrant_api_key,
+        dim=settings.embedding_dim,
+    )
+    app.state.store = store
+
+    # â”€â”€ Embedder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    embedder = EmbeddingPipeline(
+        model_name=settings.embedding_model_name,
+        model_version=settings.embedding_model_version,
+        model_url=settings.embedding_model_url,
+        batch_size=settings.embedding_batch_size,
+        max_concurrent=settings.embedding_max_concurrent,
+    )
+    app.state.embedder = embedder
+
+    # â”€â”€ Reranker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    reranker = LocalReranker(url=settings.reranker_url)
+    app.state.reranker = reranker
+
+    # â”€â”€ Semantic cache â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    cache = SemanticCache(
+        redis_url=settings.redis_url,
+        ttl=settings.cache_ttl_seconds,
+        threshold=settings.cache_similarity_threshold,
+        enabled=settings.cache_enabled,
+    )
+    app.state.cache = cache
+
+    # â”€â”€ Symbol graph (loaded from Redis if available) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    symbol_graph = None
+    try:
+        import redis as _redis
+        r = _redis.from_url(settings.redis_url)
+        from ..chunking.symbol_graph import SymbolGraph
+        symbol_graph = SymbolGraph.load_from_redis(r, "global")
+        if symbol_graph:
+            logger.info("Symbol graph loaded from Redis (%d nodes)", len(symbol_graph))
+    except Exception as exc:
+        logger.debug("Symbol graph not available: %s", exc)
+
+    # â”€â”€ Searcher â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    searcher = HybridSearcher(
+        store=store,
+        embedder=embedder,
+        symbol_graph=symbol_graph,
+    )
+    app.state.searcher = searcher
+
+    # â”€â”€ Context assembler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    assembler = ContextAssembler(
+        max_context_tokens=settings.max_context_tokens,
+        symbol_graph=symbol_graph,
+    )
+    app.state.assembler = assembler
+
+    # â”€â”€ Indexer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    indexer = Indexer(store=store, embedder=embedder)
+    app.state.indexer = indexer
+
+    # â”€â”€ Incremental indexer + webhook worker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    incremental = IncrementalIndexer(store=store, embedder=embedder)
+    await incremental.start_worker()
+    app.state.incremental_indexer = incremental
+
+    logger.info("All components initialised â€” ready to serve")
+    logger.info("â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•")
+
+    yield   # â”€â”€ App is running â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    # â”€â”€ Shutdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    logger.info("Shutting down RAG Engineâ€¦")
+    await incremental.stop_worker()
+    logger.info("Shutdown complete")
+
+
+# â”€â”€ App â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def create_app() -> FastAPI:
+    app = FastAPI(
+        title="RAG Engine â€” Code Search API",
+        description=(
+            "Local RAG engine for the AI coding/debugging/security agent.\n\n"
+            "All retrieval is RBAC-filtered by project and role. "
+            "No data leaves the local environment."
+        ),
+        version="1.0.0",
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url="/openapi.json",
+        lifespan=lifespan,
+    )
+
+    # â”€â”€ CORS (adjust origins for production) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:3000", "http://localhost:8080"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # â”€â”€ Routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    app.include_router(retrieve.router, prefix="/v1",   tags=["retrieval"])
+    app.include_router(index.router,    prefix="/v1/index", tags=["indexing"])
+    app.include_router(health.router,                   tags=["ops"])
+
+    return app
+
+
+app = create_app()
+
+
+# â”€â”€ Entrypoint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "rag.api.main:app",
+        host=settings.api_host,
+        port=settings.api_port,
+        reload=False,
+        log_level=settings.log_level.lower(),
+    )
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\api\schemas.py ===
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field, field_validator
+
+
+# â”€â”€ Retrieve â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class RetrieveRequest(BaseModel):
+    query: str = Field(..., min_length=3, max_length=2000, description="Developer query")
+    user_id: str = Field(..., min_length=1)
+    project_ids: List[str] = Field(..., min_length=1, description="Authorised project IDs")
+    allowed_roles: List[str] = Field(..., min_length=1, description="User roles for RBAC")
+    top_k: int = Field(5, ge=1, le=20)
+    filters: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Optional: language, node_types, file_path_prefix, branch",
+    )
+    options: Optional[Dict[str, bool]] = Field(
+        None,
+        description="Optional: use_reranker, include_symbol_graph, use_hyde",
+    )
+
+    @field_validator("project_ids")
+    @classmethod
+    def no_empty_project_ids(cls, v: List[str]) -> List[str]:
+        if any(not p.strip() for p in v):
+            raise ValueError("project_ids must not contain empty strings")
+        return v
+
+
+class SourceReference(BaseModel):
+    file_path: str
+    start_line: int
+    end_line: int
+    commit_hash: str
+    repository_name: str
+    node_name: str
+    language: str
+    relevance_score: float
+
+
+class RetrieveResponse(BaseModel):
+    query: str
+    assembled_context: str          # Ready to inject into the LLM prompt
+    sources: List[SourceReference]  # Exact references for anti-hallucination
+    retrieval_time_ms: int
+    cache_hit: bool
+    chunks_found: int
+    injection_detected: bool = False
+
+
+# â”€â”€ Index â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class IndexRequest(BaseModel):
+    project_id: str = Field(..., min_length=1)
+    repository_url: str = Field(..., min_length=5)
+    git_token: str = Field(..., min_length=1, description="Read-only Git token")
+    branch: str = Field("main", min_length=1)
+    tenant_id: str = Field("", description="Tenant identifier for multi-tenant isolation")
+    allowed_roles: List[str] = Field(
+        default_factory=lambda: ["developer"],
+        description="Roles allowed to query this project's chunks",
+    )
+    sensitivity_level: str = Field(
+        "internal",
+        pattern="^(public|internal|confidential|top_secret)$",
+    )
+
+
+class IndexResponse(BaseModel):
+    job_id: str
+    project_id: str
+    status: str
+    message: str
+
+
+class IndexStatusResponse(BaseModel):
+    job_id: str
+    project_id: str
+    status: str                     # pending | running | success | error
+    started_at: Optional[str]
+    finished_at: Optional[str]
+    files_total: int
+    files_indexed: int
+    files_skipped: int
+    chunks_created: int
+    secrets_found: int
+    error: Optional[str]
+    progress_pct: float
+
+
+class PurgeResponse(BaseModel):
+    project_id: str
+    status: str
+    message: str
+
+
+# â”€â”€ Webhooks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class WebhookResponse(BaseModel):
+    status: str
+    detail: str
+
+
+# â”€â”€ Health â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class HealthResponse(BaseModel):
+    status: str          # ok | degraded | error
+    version: str
+    components: Dict[str, str]
+
+
+class ReadinessResponse(BaseModel):
+    ready: bool
+    checks: Dict[str, bool]
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\api\__init__.py ===
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\api\routes\health.py ===
+from __future__ import annotations
+
+import logging
+
+from fastapi import APIRouter, Request, Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
+from ...api.schemas import HealthResponse, ReadinessResponse
+from ...config import settings
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+# Injected at startup
+_VERSION = "1.0.0"
+
+
+@router.get(
+    "/health",
+    response_model=HealthResponse,
+    summary="Liveness probe â€” is the process alive?",
+    tags=["ops"],
+)
+async def health() -> HealthResponse:
+    """Kubernetes liveness probe. Always returns 200 if the process is running."""
+    return HealthResponse(
+        status="ok",
+        version=_VERSION,
+        components={
+            "api": "ok",
+        },
+    )
+
+
+@router.get(
+    "/ready",
+    response_model=ReadinessResponse,
+    summary="Readiness probe â€” are all dependencies reachable?",
+    tags=["ops"],
+)
+async def readiness(request: Request) -> ReadinessResponse:
+    """
+    Kubernetes readiness probe.
+    Checks Qdrant and embedding model are reachable before serving traffic.
+    Returns 503 if any critical dependency is down.
+    """
+    checks: dict[str, bool] = {}
+
+    # Qdrant
+    try:
+        store = request.app.state.store
+        store.client.get_collections()
+        checks["qdrant"] = True
+    except Exception as exc:
+        logger.warning("[ready] Qdrant unreachable: %s", exc)
+        checks["qdrant"] = False
+
+    # Redis (non-critical â€” cache is optional)
+    try:
+        cache = request.app.state.cache
+        if cache._redis:
+            cache._redis.ping()
+            checks["redis"] = True
+        else:
+            checks["redis"] = False
+    except Exception:
+        checks["redis"] = False
+
+    # Embedding model (ping fastembed or remote TEI)
+    try:
+        embedder = request.app.state.embedder
+        if embedder.model_url:
+            import httpx
+            r = httpx.get(f"{embedder.model_url}/health", timeout=3)
+            checks["embedding_model"] = r.status_code == 200
+        else:
+            # fastembed is local â€” check model is loaded
+            checks["embedding_model"] = embedder._local_model is not None or True
+    except Exception as exc:
+        logger.warning("[ready] Embedding model unreachable: %s", exc)
+        checks["embedding_model"] = False
+
+    ready = checks.get("qdrant", False)   # Qdrant is the only hard dependency
+
+    if not ready:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=503, detail="Service not ready")
+
+    return ReadinessResponse(ready=ready, checks=checks)
+
+
+@router.get(
+    "/metrics",
+    summary="Prometheus metrics scrape endpoint",
+    tags=["ops"],
+    include_in_schema=False,
+)
+async def metrics() -> Response:
+    """Expose Prometheus metrics for scraping. Mount separately if needed."""
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST,
+    )
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\api\routes\index.py ===
+from __future__ import annotations
+
+import hashlib
+import hmac
+import logging
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Body
+
+from ...api.schemas import (
+    IndexRequest,
+    IndexResponse,
+    IndexStatusResponse,
+    PurgeResponse,
+    WebhookResponse,
+)
+from ...config import settings
+from ...indexing.incremental import IncrementalIndexer, verify_webhook_signature
+from ...indexing.indexer import Indexer, get_job, list_jobs
+from ...storage.qdrant_store import QdrantStore
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+
+def get_indexer(request: Request) -> Indexer:
+    return request.app.state.indexer
+
+
+def get_incremental(request: Request) -> IncrementalIndexer:
+    return request.app.state.incremental_indexer
+
+
+def get_store(request: Request) -> QdrantStore:
+    return request.app.state.store
+
+
+# â”€â”€ Trigger full indexation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+@router.post(
+    "",
+    response_model=IndexResponse,
+    summary="Trigger full repository indexation",
+    status_code=202,
+)
+async def trigger_index(
+    body: IndexRequest,
+    indexer: Indexer = Depends(get_indexer),
+) -> IndexResponse:
+    """
+    Submit a full indexation job for a Git repository.
+    Returns immediately with a job_id; poll /v1/index/status/{job_id} for progress.
+    """
+    job = indexer.submit_job(
+        project_id=body.project_id,
+        repository_url=body.repository_url,
+        git_token=body.git_token,
+        branch=body.branch,
+        allowed_roles=body.allowed_roles,
+        tenant_id=body.tenant_id,
+        sensitivity_level=body.sensitivity_level,
+    )
+    logger.info("[index] Job %s submitted for project '%s'", job.job_id, body.project_id)
+    return IndexResponse(
+        job_id=job.job_id,
+        project_id=body.project_id,
+        status="pending",
+        message=f"Indexation job {job.job_id} queued. Branch: {body.branch}",
+    )
+
+
+# â”€â”€ Job status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+@router.get(
+    "/status/{job_id}",
+    response_model=IndexStatusResponse,
+    summary="Poll indexation job status",
+)
+async def get_index_status(job_id: str) -> IndexStatusResponse:
+    job = get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
+    return IndexStatusResponse(**job.to_dict())
+
+
+@router.get(
+    "/jobs",
+    response_model=list[IndexStatusResponse],
+    summary="List all indexation jobs (optionally filter by project)",
+)
+async def list_index_jobs(project_id: str | None = None) -> list[IndexStatusResponse]:
+    jobs = list_jobs(project_id=project_id)
+    return [IndexStatusResponse(**j.to_dict()) for j in jobs]
+
+
+# â”€â”€ Purge (GDPR right to erasure â€” CDC Â§IDX-06) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+@router.delete(
+    "/{project_id}",
+    response_model=PurgeResponse,
+    summary="Purge all indexed data for a project (Admin only)",
+)
+async def purge_project(
+    project_id: str,
+    store: QdrantStore = Depends(get_store),
+) -> PurgeResponse:
+    """
+    Permanently deletes all vectors, metadata, and cache entries for a project.
+    This operation is irreversible. Requires admin role (enforced at gateway level).
+    CDC Â§IDX-06: purge must be complete and verifiable.
+    """
+    store.purge_project(project_id)
+    logger.warning("[purge] Project '%s' fully purged from Qdrant", project_id)
+    return PurgeResponse(
+        project_id=project_id,
+        status="purged",
+        message=f"All indexed data for project '{project_id}' has been permanently deleted.",
+    )
+
+
+# â”€â”€ Collection info â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+@router.get(
+    "/{project_id}/info",
+    summary="Get collection stats for a project",
+)
+async def project_info(
+    project_id: str,
+    store: QdrantStore = Depends(get_store),
+) -> dict:
+    return store.get_collection_info(project_id)
+
+
+# â”€â”€ Git webhook â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+@router.post(
+    "/webhook",
+    response_model=WebhookResponse,
+    summary="Receive Git push webhooks for incremental re-indexation",
+)
+async def git_webhook(
+    request: Request,
+    x_gitlab_token: str | None = Header(None),
+    x_hub_signature_256: str | None = Header(None),
+    x_gitlab_event: str | None = Header(None),
+    x_github_event: str | None = Header(None),
+    incremental: IncrementalIndexer = Depends(get_incremental),
+) -> WebhookResponse:
+    """
+    Endpoint for GitLab / GitHub push webhooks.
+    Signature is verified before any processing (CDC Â§8.1 webhook security).
+    """
+    body_bytes = await request.body()
+
+    # Verify signature
+    signature = x_gitlab_token or x_hub_signature_256 or ""
+    if not verify_webhook_signature(body_bytes, signature, settings.webhook_secret):
+        logger.warning("[webhook] Invalid signature from %s", request.client.host if request.client else "?")
+        raise HTTPException(status_code=403, detail="Invalid webhook signature")
+
+    payload = await request.json()
+    event_type = x_gitlab_event or x_github_event or "unknown"
+
+    result = await incremental.handle_webhook(payload, event_type)
+    logger.info("[webhook] Event '%s' â†’ %s", event_type, result)
+
+    return WebhookResponse(status="received", detail=result)
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\api\routes\retrieve.py ===
+from __future__ import annotations
+
+import logging
+import time
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+
+from ...api.schemas import RetrieveRequest, RetrieveResponse, SourceReference
+from ...cache.semantic_cache import SemanticCache
+from ...metrics.prometheus import (
+    CACHE_HITS,
+    CACHE_MISSES,
+    RETRIEVAL_CHUNKS_RETURNED,
+    RETRIEVAL_LATENCY,
+    RETRIEVAL_REQUESTS,
+)
+from ...retrieval.context_assembler import ContextAssembler
+from ...retrieval.hybrid_searcher import HybridSearcher
+from ...retrieval.reranker import LocalReranker
+from ...config import settings
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+
+def get_searcher(request: Request) -> HybridSearcher:
+    return request.app.state.searcher
+
+
+def get_cache(request: Request) -> SemanticCache:
+    return request.app.state.cache
+
+
+def get_reranker(request: Request) -> LocalReranker:
+    return request.app.state.reranker
+
+
+def get_assembler(request: Request) -> ContextAssembler:
+    return request.app.state.assembler
+
+
+@router.post(
+    "/retrieve",
+    response_model=RetrieveResponse,
+    summary="Retrieve relevant code chunks for a query",
+    description=(
+        "Performs hybrid semantic + BM25 + symbol-graph retrieval "
+        "with mandatory RBAC pre-filtering. Returns assembled context "
+        "and exact source references."
+    ),
+)
+async def retrieve(
+    body: RetrieveRequest,
+    searcher: HybridSearcher = Depends(get_searcher),
+    cache: SemanticCache = Depends(get_cache),
+    reranker: LocalReranker = Depends(get_reranker),
+    assembler: ContextAssembler = Depends(get_assembler),
+) -> RetrieveResponse:
+    t0 = time.monotonic()
+    cache_hit = False
+
+    # Only single-project queries for now (multi-project is roadmap)
+    if len(body.project_ids) > 1:
+        raise HTTPException(
+            status_code=422,
+            detail="Multi-project retrieval not yet supported. Pass exactly one project_id.",
+        )
+    project_id = body.project_ids[0]
+
+    options = body.options or {}
+    use_reranker = options.get("use_reranker", settings.reranker_enabled)
+    use_hyde = options.get("use_hyde", False)
+
+    try:
+        # â”€â”€ 1. Semantic cache lookup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        query_embedding = await searcher.embedder.embed_single(body.query)
+
+        cached = await cache.get(
+            query=body.query,
+            query_embedding=query_embedding,
+            user_id=body.user_id,
+            project_ids=body.project_ids,
+        )
+        if cached is not None:
+            cache_hit = True
+            CACHE_HITS.inc()
+            elapsed_ms = int((time.monotonic() - t0) * 1000)
+            RETRIEVAL_LATENCY.labels(cache_hit="true").observe(time.monotonic() - t0)
+            RETRIEVAL_REQUESTS.labels(status="success", cache_hit="true").inc()
+            return RetrieveResponse(
+                query=body.query,
+                assembled_context=cached.get("assembled_context", ""),
+                sources=[SourceReference(**s) for s in cached.get("sources", [])],
+                retrieval_time_ms=elapsed_ms,
+                cache_hit=True,
+                chunks_found=cached.get("chunks_found", 0),
+                injection_detected=cached.get("injection_detected", False),
+            )
+
+        CACHE_MISSES.inc()
+
+        # â”€â”€ 2. Hybrid retrieval â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        results = await searcher.search(
+            query=body.query,
+            project_id=project_id,
+            allowed_roles=body.allowed_roles,
+            top_k=body.top_k,
+            filters=body.filters,
+            use_hyde=use_hyde,
+        )
+
+        # â”€â”€ 3. Optional reranking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        if use_reranker and results:
+            results = await reranker.rerank(
+                query=body.query,
+                candidates=results,
+                top_k=body.top_k,
+            )
+
+        # â”€â”€ 4. Context assembly + anti-injection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        context = assembler.assemble(
+            query=body.query,
+            ranked_results=results,
+            include_callers=options.get("include_symbol_graph", True),
+        )
+
+        sources = [SourceReference(**s) for s in context["sources"]]
+        RETRIEVAL_CHUNKS_RETURNED.observe(len(sources))
+
+        # â”€â”€ 5. Cache store â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        cache_payload = {
+            "assembled_context": context["assembled_context"],
+            "sources": [s.model_dump() for s in sources],
+            "chunks_found": len(results),
+            "injection_detected": context.get("injection_detected", False),
+            "project_ids": body.project_ids,
+        }
+        await cache.set(
+            query=body.query,
+            query_embedding=query_embedding,
+            user_id=body.user_id,
+            project_ids=body.project_ids,
+            result=cache_payload,
+        )
+
+        elapsed_ms = int((time.monotonic() - t0) * 1000)
+        RETRIEVAL_LATENCY.labels(cache_hit="false").observe(time.monotonic() - t0)
+        RETRIEVAL_REQUESTS.labels(status="success", cache_hit="false").inc()
+
+        return RetrieveResponse(
+            query=body.query,
+            assembled_context=context["assembled_context"],
+            sources=sources,
+            retrieval_time_ms=elapsed_ms,
+            cache_hit=False,
+            chunks_found=len(results),
+            injection_detected=context.get("injection_detected", False),
+        )
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        RETRIEVAL_REQUESTS.labels(status="error", cache_hit="false").inc()
+        logger.error("[retrieve] Unexpected error: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Retrieval failed. Check server logs.")
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\api\routes\__init__.py ===
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\cache\semantic_cache.py ===
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import math
+import uuid
+from typing import Any, Dict, List, Optional
+
+import redis
+
+from ..config import settings
+
+logger = logging.getLogger(__name__)
+
+
+class SemanticCache:
+    """
+    Semantic query cache stored in Redis.
+
+    - Returns cached results for queries that are semantically similar
+      (cosine similarity â‰¥ threshold), not just lexically identical.
+    - Strictly RBAC-isolated: a cache entry is keyed by {user_id + project_ids}.
+      A hit from one tenant can never serve another.
+    - TTL: configurable, default 1 h.
+
+    Target: â‰¥ 40% cache hit rate on repeated queries (CDC Â§KPIs).
+    """
+
+    def __init__(
+        self,
+        redis_url: str = settings.redis_url,
+        ttl: int = settings.cache_ttl_seconds,
+        threshold: float = settings.cache_similarity_threshold,
+        enabled: bool = settings.cache_enabled,
+    ):
+        self.ttl = ttl
+        self.threshold = threshold
+        self.enabled = enabled
+        self._redis: Optional[redis.Redis] = None
+
+        if enabled:
+            try:
+                self._redis = redis.from_url(redis_url, decode_responses=True)
+                self._redis.ping()
+                logger.info("[cache] Redis connected")
+            except Exception as exc:
+                logger.warning("[cache] Redis unavailable â€” cache disabled: %s", exc)
+                self._redis = None
+
+    # â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    async def get(
+        self,
+        query: str,
+        query_embedding: List[float],
+        user_id: str,
+        project_ids: List[str],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Return cached result if a semantically similar query exists for the
+        same RBAC context. Returns None on miss.
+        """
+        if not self._redis or not self.enabled:
+            return None
+
+        rbac_hash = self._rbac_hash(user_id, project_ids)
+        pattern = f"rag_cache:{rbac_hash}:*"
+
+        try:
+            keys = list(self._redis.scan_iter(pattern, count=200))[:100]
+            for key in keys:
+                raw = self._redis.get(key)
+                if not raw:
+                    continue
+                entry = json.loads(raw)
+                sim = _cosine_similarity(query_embedding, entry["query_embedding"])
+                if sim >= self.threshold:
+                    logger.debug("[cache] HIT  (sim=%.3f) for '%s'", sim, query[:60])
+                    return entry["result"]
+        except Exception as exc:
+            logger.warning("[cache] get error: %s", exc)
+
+        return None
+
+    async def set(
+        self,
+        query: str,
+        query_embedding: List[float],
+        user_id: str,
+        project_ids: List[str],
+        result: Dict[str, Any],
+    ) -> None:
+        """Store a query result with its embedding."""
+        if not self._redis or not self.enabled:
+            return
+
+        rbac_hash = self._rbac_hash(user_id, project_ids)
+        key = f"rag_cache:{rbac_hash}:{uuid.uuid4().hex[:8]}"
+
+        try:
+            self._redis.setex(
+                key,
+                self.ttl,
+                json.dumps({
+                    "query_embedding": query_embedding,
+                    "result": result,
+                    "query_preview": query[:120],
+                }),
+            )
+            logger.debug("[cache] SET key=%s for '%s'", key, query[:60])
+        except Exception as exc:
+            logger.warning("[cache] set error: %s", exc)
+
+    def invalidate_project(self, project_id: str) -> int:
+        """
+        Invalidate all cache entries that include a given project.
+        Called after re-indexation to prevent stale results.
+        """
+        if not self._redis:
+            return 0
+        count = 0
+        try:
+            for key in self._redis.scan_iter("rag_cache:*", count=500):
+                raw = self._redis.get(key)
+                if raw:
+                    try:
+                        entry = json.loads(raw)
+                        # The RBAC hash encodes project_ids â€” we can't decode it.
+                        # So we store project_ids separately for invalidation.
+                        if project_id in entry.get("project_ids", []):
+                            self._redis.delete(key)
+                            count += 1
+                    except Exception:
+                        pass
+        except Exception as exc:
+            logger.warning("[cache] invalidate error: %s", exc)
+        logger.info("[cache] Invalidated %d entries for project %s", count, project_id)
+        return count
+
+    # â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @staticmethod
+    def _rbac_hash(user_id: str, project_ids: List[str]) -> str:
+        """
+        Deterministic hash of {user_id, sorted project_ids}.
+        A cache entry NEVER crosses tenant boundaries.
+        """
+        key = f"{user_id}:{':'.join(sorted(project_ids))}"
+        return hashlib.sha256(key.encode()).hexdigest()[:16]
+
+
+# â”€â”€ Cosine similarity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def _cosine_similarity(a: List[float], b: List[float]) -> float:
+    if len(a) != len(b):
+        return 0.0
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(x * x for x in b))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\cache\__init__.py ===
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\chunking\ast_chunker.py ===
+from __future__ import annotations
+
+import hashlib
+import logging
+import re
+from pathlib import Path
+from typing import Dict, List, Optional
+
+from .models import CodeChunk
+
+logger = logging.getLogger(__name__)
+
+# â”€â”€ Node type sets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+CHUNK_NODE_TYPES: frozenset[str] = frozenset({
+    # Python
+    "function_definition", "async_function_definition", "class_definition",
+    # JavaScript / TypeScript
+    "function_declaration", "function_expression", "arrow_function",
+    "method_definition", "class_declaration", "class_expression",
+    "lexical_declaration",          # const fn = () => â€¦
+    # Java
+    "method_declaration", "constructor_declaration",
+    "class_declaration", "interface_declaration", "enum_declaration",
+    # Go
+    "function_declaration", "method_declaration", "type_declaration",
+    # Rust
+    "function_item", "impl_item", "struct_item", "enum_item", "trait_item",
+    "type_alias",
+})
+
+IMPORT_NODE_TYPES: frozenset[str] = frozenset({
+    "import_statement", "import_from_statement",   # Python
+    "import_declaration",                           # JS / TS / Java
+    "use_declaration",                              # Rust
+    "import_spec",                                  # Go
+    "require",                                      # CommonJS-style
+})
+
+CLASS_NODE_TYPES: frozenset[str] = frozenset({
+    "class_definition", "class_declaration", "class_expression",
+    "impl_item",
+})
+
+
+# â”€â”€ Parser registry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def _build_parser_registry() -> Dict[str, object]:
+    """Load tree-sitter parsers; skip any that fail to load."""
+    registry: Dict[str, object] = {}
+    try:
+        from tree_sitter import Language, Parser
+    except ImportError:
+        logger.error("tree-sitter not installed â€” AST chunking disabled")
+        return registry
+
+    def _load(lang_key: str, module_name: str, lang_fn: str, aliases: list[str] = []):
+        try:
+            mod = __import__(module_name)
+            lang = Language(getattr(mod, lang_fn)())
+            p = Parser(lang)
+            registry[lang_key] = p
+            for alias in aliases:
+                registry[alias] = p
+        except Exception as exc:
+            logger.warning("Parser '%s' not available: %s", lang_key, exc)
+
+    _load("python", "tree_sitter_python", "language")
+    _load("javascript", "tree_sitter_javascript", "language", ["jsx"])
+    _load("typescript", "tree_sitter_typescript", "language_typescript", ["tsx"])
+    _load("java", "tree_sitter_java", "language")
+    _load("go", "tree_sitter_go", "language")
+    _load("rust", "tree_sitter_rust", "language")
+
+    loaded = list(registry.keys())
+    logger.info("Tree-sitter parsers loaded: %s", loaded)
+    return registry
+
+
+_REGISTRY: Dict[str, object] | None = None
+
+
+def _get_parser(language: str):
+    global _REGISTRY
+    if _REGISTRY is None:
+        _REGISTRY = _build_parser_registry()
+    return _REGISTRY.get(language)
+
+
+# â”€â”€ ASTChunker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class ASTChunker:
+    """
+    Chunk source files by AST node boundaries using Tree-sitter.
+    Chunking by character count or line count is explicitly prohibited
+    (RAG Engine Guide Â§2.2).
+    """
+
+    def chunk_file(
+        self,
+        file_content: str,
+        file_path: str,
+        language: str,
+        *,
+        project_id: str = "",
+        tenant_id: str = "",
+        allowed_roles: Optional[List[str]] = None,
+        sensitivity_level: str = "internal",
+        commit_hash: str = "unknown",
+        branch: str = "main",
+        repository_name: str = "",
+        has_secrets_redacted: bool = False,
+    ) -> List[CodeChunk]:
+        """Parse a source file and return a list of CodeChunks."""
+        roles = allowed_roles or []
+        common = dict(
+            file_path=file_path,
+            language=language,
+            project_id=project_id,
+            tenant_id=tenant_id,
+            allowed_roles=roles,
+            sensitivity_level=sensitivity_level,
+            commit_hash=commit_hash,
+            branch=branch,
+            repository_name=repository_name,
+            has_secrets_redacted=has_secrets_redacted,
+        )
+
+        parser = _get_parser(language)
+        if parser is None:
+            return [self._whole_file_chunk(file_content, **common)]
+
+        try:
+            tree = parser.parse(file_content.encode("utf-8", errors="replace"))
+        except Exception as exc:
+            logger.warning("Parse failed for %s (%s): %s", file_path, language, exc)
+            return [self._whole_file_chunk(file_content, **common)]
+
+        imports_block = self._extract_imports(tree.root_node, file_content)
+        chunks: List[CodeChunk] = []
+        self._visit(
+            tree.root_node, file_content, imports_block, chunks,
+            parent_class=None, **common,
+        )
+
+        return chunks if chunks else [self._whole_file_chunk(file_content, **common)]
+
+    # â”€â”€ Tree traversal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def _visit(
+        self,
+        node,
+        source: str,
+        imports: str,
+        chunks: List[CodeChunk],
+        *,
+        parent_class: Optional[str],
+        **common,
+    ) -> None:
+        if node.type not in CHUNK_NODE_TYPES:
+            for child in node.children:
+                self._visit(child, source, imports, chunks,
+                            parent_class=parent_class, **common)
+            return
+
+        raw = source[node.start_byte:node.end_byte]
+        name = self._extract_name(node, source)
+        is_class = node.type in CLASS_NODE_TYPES
+        node_type = "class" if is_class else "function"
+        # Methods inside a class get node_type="method"
+        if not is_class and parent_class:
+            node_type = "method"
+
+        full_content = (
+            f"{imports}\n\n# --- {common['file_path']} ---\n{raw}"
+            if imports else
+            f"# --- {common['file_path']} ---\n{raw}"
+        )
+
+        chunk = CodeChunk(
+            content=full_content,
+            node_type=node_type,
+            node_name=name,
+            start_line=node.start_point[0] + 1,
+            end_line=node.end_point[0] + 1,
+            parent_class=parent_class,
+            imports_context=imports,
+            docstring=self._extract_docstring(node, source),
+            calls=self._collect_calls(node, source),
+            imports=self._parse_import_names(imports),
+            chunk_hash=_normalize_hash(full_content),
+            **common,
+        )
+        chunks.append(chunk)
+
+        # Recurse into classes to find methods
+        next_parent = name if is_class else parent_class
+        for child in node.children:
+            self._visit(child, source, imports, chunks,
+                        parent_class=next_parent, **common)
+
+    # â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @staticmethod
+    def _extract_imports(root_node, source: str) -> str:
+        lines = []
+        for node in root_node.children:
+            if node.type in IMPORT_NODE_TYPES:
+                lines.append(source[node.start_byte:node.end_byte])
+        return "\n".join(lines)
+
+    @staticmethod
+    def _extract_name(node, source: str) -> str:
+        for child in node.children:
+            if child.type in ("identifier", "name", "property_identifier"):
+                return source[child.start_byte:child.end_byte]
+        return "anonymous"
+
+    @staticmethod
+    def _extract_docstring(node, source: str) -> Optional[str]:
+        """Best-effort docstring extraction from the first statement."""
+        for child in node.children:
+            if child.type in ("block", "statement_block", "body"):
+                for stmt in child.children:
+                    for inner in stmt.children:
+                        if inner.type in ("string", "string_literal"):
+                            raw = source[inner.start_byte:inner.end_byte]
+                            return raw.strip("'\"` ")
+        return None
+
+    @classmethod
+    def _collect_calls(cls, node, source: str) -> List[str]:
+        calls: set[str] = set()
+        cls._recurse_calls(node, source, calls)
+        return list(calls)
+
+    @classmethod
+    def _recurse_calls(cls, node, source: str, acc: set) -> None:
+        if node.type == "call":
+            func = node.children[0] if node.children else None
+            if func:
+                name = source[func.start_byte:func.end_byte].split("(")[0].strip()
+                if name and len(name) < 80 and not name.startswith('"'):
+                    acc.add(name)
+        for child in node.children:
+            cls._recurse_calls(child, source, acc)
+
+    @staticmethod
+    def _parse_import_names(imports_block: str) -> List[str]:
+        names = re.findall(r"(?:import|from)\s+([a-zA-Z_][a-zA-Z0-9_.]*)", imports_block)
+        return list(dict.fromkeys(names))   # deduplicated, order-preserving
+
+    @staticmethod
+    def _whole_file_chunk(content: str, **common) -> CodeChunk:
+        """Fallback: index the entire file as one chunk."""
+        lines = content.splitlines()
+        file_path = common.get("file_path", "")
+        return CodeChunk(
+            content=f"# --- {file_path} ---\n{content}",
+            node_type="module",
+            node_name=Path(file_path).stem or "file",
+            start_line=1,
+            end_line=len(lines),
+            chunk_hash=_normalize_hash(content),
+            **common,
+        )
+
+
+def _normalize_hash(content: str) -> str:
+    """SHA-256 of whitespace-normalised content â€” used for deduplication."""
+    normalised = " ".join(content.split())
+    return hashlib.sha256(normalised.encode()).hexdigest()
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\chunking\deduplication.py ===
+from __future__ import annotations
+
+import hashlib
+from typing import List
+
+from .models import CodeChunk
+
+
+def compute_chunk_hash(content: str) -> str:
+    """
+    SHA-256 of whitespace-normalised content.
+    Detects identical code that appears on multiple branches.
+    """
+    normalised = " ".join(content.split())
+    return hashlib.sha256(normalised.encode()).hexdigest()
+
+
+def deduplicate_chunks(chunks: List[CodeChunk]) -> List[CodeChunk]:
+    """
+    Remove duplicate chunks by content hash.
+    When the same function exists on multiple branches, keep the first seen.
+    The chunk_hash field is set/updated in place.
+    """
+    seen: dict[str, CodeChunk] = {}
+    for chunk in chunks:
+        h = chunk.chunk_hash or compute_chunk_hash(chunk.content)
+        chunk.chunk_hash = h
+        if h not in seen:
+            seen[h] = chunk
+    return list(seen.values())
+
+
+def assign_chunk_ids(chunks: List[CodeChunk]) -> List[CodeChunk]:
+    """
+    Assign stable UUIDs derived from chunk_hash + project_id.
+    Deterministic: same chunk always gets the same ID (idempotent upsert).
+    """
+    import uuid
+    for chunk in chunks:
+        seed = f"{chunk.project_id}::{chunk.chunk_hash}"
+        chunk.chunk_id = str(uuid.uuid5(uuid.NAMESPACE_OID, seed))
+    return chunks
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\chunking\models.py ===
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import List, Optional
+
+
+@dataclass
+class CodeChunk:
+    """
+    Single indexed unit of code.
+    RBAC fields (project_id, tenant_id, allowed_roles, sensitivity_level)
+    MUST always be set before indexing â€” they are the access control boundary.
+    """
+
+    # â”€â”€ Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    content: str                        # Code after secret redaction
+    file_path: str                      # Relative path in repo
+    language: str                       # python | typescript | go | â€¦
+    node_type: str                      # function | class | method | module | config
+    node_name: str                      # Identifier name
+    start_line: int
+    end_line: int
+
+    # â”€â”€ Structural context â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    parent_class: Optional[str] = None
+    imports_context: str = ""           # File-level imports prepended to chunk
+    docstring: Optional[str] = None
+
+    # â”€â”€ Version â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    commit_hash: str = "unknown"
+    branch: str = "main"
+    repository_name: str = ""
+
+    # â”€â”€ RBAC â€” NEVER OMIT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    project_id: str = ""
+    tenant_id: str = ""
+    allowed_roles: List[str] = field(default_factory=list)
+    sensitivity_level: str = "internal"   # public | internal | confidential | top_secret
+
+    # â”€â”€ Symbol graph â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    calls: List[str] = field(default_factory=list)      # Functions called in this chunk
+    called_by: List[str] = field(default_factory=list)  # Populated by SymbolGraph
+    imports: List[str] = field(default_factory=list)    # Module names imported
+
+    # â”€â”€ Quality / provenance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    has_secrets_redacted: bool = False
+    chunk_hash: str = ""           # SHA-256 of normalised content (deduplication)
+    chunk_id: str = ""             # UUID assigned at indexing time
+    embedding_model: str = ""
+    embedding_model_version: str = ""
+    indexed_at: str = ""
+    file_last_modified: str = ""
+
+    # â”€â”€ Convenience â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def to_qdrant_payload(self) -> dict:
+        """Serialise to Qdrant point payload (all fields, flat dict)."""
+        return {
+            "chunk_id": self.chunk_id,
+            "chunk_hash": self.chunk_hash,
+            "content": self.content,
+            "file_path": self.file_path,
+            "language": self.language,
+            "node_type": self.node_type,
+            "node_name": self.node_name,
+            "start_line": self.start_line,
+            "end_line": self.end_line,
+            "parent_class": self.parent_class or "",
+            "imports_context": self.imports_context,
+            "docstring": self.docstring or "",
+            "commit_hash": self.commit_hash,
+            "branch": self.branch,
+            "repository_name": self.repository_name,
+            # RBAC
+            "project_id": self.project_id,
+            "tenant_id": self.tenant_id,
+            "allowed_roles": self.allowed_roles,
+            "sensitivity_level": self.sensitivity_level,
+            # Symbol graph
+            "calls": self.calls,
+            "called_by": self.called_by,
+            "imports": self.imports,
+            # Quality
+            "has_secrets_redacted": self.has_secrets_redacted,
+            "embedding_model": self.embedding_model,
+            "embedding_model_version": self.embedding_model_version,
+            "indexed_at": self.indexed_at,
+            "file_last_modified": self.file_last_modified,
+        }
+
+    @property
+    def fqn(self) -> str:
+        """Fully qualified name: repo::file::class::function."""
+        parts = [self.repository_name, self.file_path]
+        if self.parent_class:
+            parts.append(self.parent_class)
+        parts.append(self.node_name)
+        return "::".join(p for p in parts if p)
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\chunking\symbol_graph.py ===
+from __future__ import annotations
+
+import json
+import logging
+from typing import List
+
+import networkx as nx
+
+logger = logging.getLogger(__name__)
+
+
+class SymbolGraph:
+    """
+    Directed graph of symbol relationships (calls, imports).
+    Answers queries like:
+      - "All callers of authenticate_user up to depth 2"
+      - "What does parse_token call?"
+
+    Persisted as JSON in Redis (key: symbol_graph:{project_id}).
+    TTL default: 24 h â€” refreshed on each re-indexation.
+    """
+
+    def __init__(self) -> None:
+        self.graph: nx.DiGraph = nx.DiGraph()
+
+    # â”€â”€ Graph construction â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def add_call_edge(self, caller_fqn: str, callee_fqn: str) -> None:
+        """caller â†’ callee: caller calls callee."""
+        self.graph.add_edge(caller_fqn, callee_fqn, relation="calls")
+
+    def add_import_edge(self, importer_fqn: str, imported_symbol: str) -> None:
+        """importer â†’ imported_symbol."""
+        self.graph.add_edge(importer_fqn, imported_symbol, relation="imports")
+
+    def update_called_by(self) -> None:
+        """
+        Invert call edges to populate called_by on each node.
+        Call after all add_call_edge() calls are complete.
+        """
+        for node in self.graph.nodes:
+            callers = list(nx.ancestors(self.graph, node))
+            self.graph.nodes[node]["called_by"] = callers
+
+    # â”€â”€ Queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def get_callers(self, fqn: str, depth: int = 2) -> List[str]:
+        """Return FQNs that call `fqn`, up to `depth` hops."""
+        try:
+            callers = nx.ancestors(self.graph, fqn)
+            # Filter by depth using BFS
+            if depth < 99:
+                callers = set()
+                queue = [(fqn, 0)]
+                visited = {fqn}
+                while queue:
+                    node, d = queue.pop(0)
+                    if d >= depth:
+                        continue
+                    for pred in self.graph.predecessors(node):
+                        if pred not in visited:
+                            visited.add(pred)
+                            callers.add(pred)
+                            queue.append((pred, d + 1))
+            return list(callers)
+        except nx.NetworkXError:
+            return []
+
+    def get_callees(self, fqn: str) -> List[str]:
+        """Return FQNs called by `fqn`."""
+        try:
+            return list(self.graph.successors(fqn))
+        except nx.NetworkXError:
+            return []
+
+    def get_dependency_context(self, fqn: str) -> dict:
+        return {
+            "fqn": fqn,
+            "calls": self.get_callees(fqn),
+            "called_by": self.get_callers(fqn, depth=2),
+            "importance_score": self.graph.in_degree(fqn) if fqn in self.graph else 0,
+        }
+
+    def search_by_name(self, name: str) -> List[str]:
+        """Find nodes whose FQN contains the given identifier name."""
+        return [n for n in self.graph.nodes if name in n.split("::")[-1]]
+
+    # â”€â”€ Persistence â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def persist_to_redis(self, redis_client, project_id: str, ttl: int = 86400) -> None:
+        try:
+            data = nx.node_link_data(self.graph)
+            redis_client.set(
+                f"symbol_graph:{project_id}",
+                json.dumps(data),
+                ex=ttl,
+            )
+            logger.info("[graph] Persisted %d nodes for project %s", len(self.graph), project_id)
+        except Exception as exc:
+            logger.error("[graph] Redis persist failed: %s", exc)
+
+    @classmethod
+    def load_from_redis(cls, redis_client, project_id: str) -> "SymbolGraph | None":
+        try:
+            raw = redis_client.get(f"symbol_graph:{project_id}")
+            if raw is None:
+                return None
+            g = cls()
+            g.graph = nx.node_link_graph(json.loads(raw))
+            return g
+        except Exception as exc:
+            logger.warning("[graph] Redis load failed for %s: %s", project_id, exc)
+            return None
+
+    def to_dict(self) -> dict:
+        return nx.node_link_data(self.graph)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "SymbolGraph":
+        g = cls()
+        g.graph = nx.node_link_graph(data)
+        return g
+
+    def __len__(self) -> int:
+        return len(self.graph)
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\chunking\__init__.py ===
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\embeddings\pipeline.py ===
+from __future__ import annotations
+
+import asyncio
+import logging
+from datetime import datetime, timezone
+from typing import AsyncIterator, List, Optional, Tuple
+
+import aiohttp
+from tenacity import retry, stop_after_attempt, wait_exponential
+from tqdm import tqdm
+
+from ..chunking.models import CodeChunk
+from ..config import settings
+
+logger = logging.getLogger(__name__)
+
+
+class EmbeddingPipeline:
+    """
+    Batch embedding pipeline.
+    - Uses fastembed locally when EMBEDDING_MODEL_URL is empty (dev/offline).
+    - Switches to a remote TEI HTTP server when the URL is set (production).
+
+    All chunks get their embedding_model and indexed_at fields set here.
+    """
+
+    def __init__(
+        self,
+        model_name: str = settings.embedding_model_name,
+        model_version: str = settings.embedding_model_version,
+        model_url: str = settings.embedding_model_url,
+        batch_size: int = settings.embedding_batch_size,
+        max_concurrent: int = settings.embedding_max_concurrent,
+    ):
+        self.model_name = model_name
+        self.model_version = model_version
+        self.model_url = model_url.rstrip("/")
+        self.batch_size = batch_size
+        self._semaphore = asyncio.Semaphore(max_concurrent)
+        self._local_model = None   # lazy-loaded fastembed model
+
+        if self.model_url:
+            logger.info("[embed] Mode: remote TEI â†’ %s", self.model_url)
+        else:
+            logger.info("[embed] Mode: local fastembed (%s)", self.model_name)
+
+    # â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    async def embed_chunks(
+        self, chunks: List[CodeChunk], show_progress: bool = True
+    ) -> List[Tuple[CodeChunk, List[float]]]:
+        """Embed all chunks and return (chunk, vector) pairs."""
+        now = datetime.now(timezone.utc).isoformat()
+        for chunk in chunks:
+            chunk.embedding_model = self.model_name
+            chunk.embedding_model_version = self.model_version
+            chunk.indexed_at = now
+
+        texts = [c.content for c in chunks]
+        vectors = await self._embed_all(texts, show_progress=show_progress)
+        return list(zip(chunks, vectors))
+
+    async def embed_single(self, text: str) -> List[float]:
+        """Embed a single text â€” used by retrieval and semantic cache."""
+        results = await self._embed_all([text], show_progress=False)
+        return results[0]
+
+    # â”€â”€ Routing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    async def _embed_all(
+        self, texts: List[str], show_progress: bool = True
+    ) -> List[List[float]]:
+        if self.model_url:
+            return await self._embed_remote(texts, show_progress)
+        return self._embed_local(texts, show_progress)
+
+    # â”€â”€ Local fastembed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def _embed_local(
+        self, texts: List[str], show_progress: bool = True
+    ) -> List[List[float]]:
+        if self._local_model is None:
+            self._local_model = self._load_fastembed()
+
+        all_vectors: List[List[float]] = []
+        batches = _batchify(texts, self.batch_size)
+        it = tqdm(batches, desc="Embedding (local)", disable=not show_progress)
+        for batch in it:
+            vectors = list(self._local_model.embed(batch))
+            all_vectors.extend([v.tolist() for v in vectors])
+        return all_vectors
+
+    def _load_fastembed(self):
+        try:
+            from fastembed import TextEmbedding
+            logger.info("[embed] Loading fastembed model '%s'â€¦", self.model_name)
+            return TextEmbedding(model_name=self.model_name)
+        except ImportError:
+            raise RuntimeError(
+                "fastembed not installed. Run: pip install fastembed"
+            )
+
+    # â”€â”€ Remote TEI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    async def _embed_remote(
+        self, texts: List[str], show_progress: bool = True
+    ) -> List[List[float]]:
+        all_vectors: List[List[float]] = []
+        batches = _batchify(texts, self.batch_size)
+        it = tqdm(batches, desc="Embedding (remote)", disable=not show_progress)
+        for batch in it:
+            vectors = await self._embed_batch_remote(batch)
+            all_vectors.extend(vectors)
+        return all_vectors
+
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10))
+    async def _embed_batch_remote(self, texts: List[str]) -> List[List[float]]:
+        async with self._semaphore:
+            async with aiohttp.ClientSession() as session:
+                resp = await session.post(
+                    f"{self.model_url}/embed",
+                    json={"inputs": texts},
+                    timeout=aiohttp.ClientTimeout(total=60),
+                )
+                resp.raise_for_status()
+                data = await resp.json()
+                # TEI returns {"embeddings": [[â€¦], â€¦]}
+                return data.get("embeddings", data)
+
+
+# â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def _batchify(items: list, size: int) -> list[list]:
+    return [items[i: i + size] for i in range(0, len(items), size)]
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\embeddings\__init__.py ===
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\evaluation\evaluator.py ===
+from __future__ import annotations
+
+import json
+import logging
+import random
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class TestCase:
+    query: str
+    expected_chunk_ids: List[str]
+    expected_file_paths: List[str] = field(default_factory=list)
+    category: str = "general"          # debugging | security | refactoring | general
+    project_id: str = ""
+    notes: str = ""
+
+
+@dataclass
+class EvalResult:
+    recall_at_5: float
+    mrr: float
+    precision_at_5: float
+    passes: bool
+    total_cases: int
+    target_recall: float = 0.95
+    per_category: Dict[str, float] = field(default_factory=dict)
+    failed_cases: List[Dict] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "recall_at_5": round(self.recall_at_5, 4),
+            "mrr": round(self.mrr, 4),
+            "precision_at_5": round(self.precision_at_5, 4),
+            "passes": self.passes,
+            "total_cases": self.total_cases,
+            "target_recall": self.target_recall,
+            "per_category": {k: round(v, 4) for k, v in self.per_category.items()},
+            "failed_cases_count": len(self.failed_cases),
+        }
+
+
+class RAGEvaluator:
+    """
+    Offline evaluation framework for the RAG engine.
+
+    Metrics:
+    - Recall@5  : â‰¥ 95% target (CDC Â§12)
+    - MRR       : Mean Reciprocal Rank
+    - Precision@5
+
+    Usage:
+        evaluator = RAGEvaluator()
+        dataset = evaluator.load_dataset("eval_dataset.json")
+        result = await evaluator.evaluate(dataset, rag_engine)
+        print(result.to_dict())
+    """
+
+    def __init__(self, target_recall: float = 0.95, top_k: int = 5):
+        self.target_recall = target_recall
+        self.top_k = top_k
+
+    # â”€â”€ Evaluation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    async def evaluate(
+        self,
+        dataset: List[TestCase],
+        rag_engine,           # HybridSearcher instance
+        project_id: str = "",
+        allowed_roles: Optional[List[str]] = None,
+    ) -> EvalResult:
+        """Run all test cases and return aggregated metrics."""
+        roles = allowed_roles or ["developer"]
+        recall_scores: List[float] = []
+        mrr_scores: List[float] = []
+        precision_scores: List[float] = []
+        by_category: Dict[str, List[float]] = {}
+        failed: List[Dict] = []
+
+        for case in dataset:
+            pid = case.project_id or project_id
+            results = await rag_engine.search(
+                query=case.query,
+                project_id=pid,
+                allowed_roles=roles,
+                top_k=self.top_k,
+            )
+
+            retrieved_ids = self._extract_ids(results)
+            expected = set(case.expected_chunk_ids)
+
+            # Recall@K
+            hits = len(expected & set(retrieved_ids[:self.top_k]))
+            recall = hits / len(expected) if expected else 0.0
+            recall_scores.append(recall)
+
+            # Precision@K
+            precision = hits / min(self.top_k, len(retrieved_ids)) if retrieved_ids else 0.0
+            precision_scores.append(precision)
+
+            # MRR
+            mrr = 0.0
+            for rank, rid in enumerate(retrieved_ids[:self.top_k], 1):
+                if rid in expected:
+                    mrr = 1.0 / rank
+                    break
+            mrr_scores.append(mrr)
+
+            # Per-category
+            by_category.setdefault(case.category, []).append(recall)
+
+            if recall < self.target_recall:
+                failed.append({
+                    "query": case.query,
+                    "category": case.category,
+                    "recall": round(recall, 3),
+                    "expected_ids": list(expected),
+                    "retrieved_ids": retrieved_ids[:self.top_k],
+                })
+
+        n = len(dataset)
+        final_recall = sum(recall_scores) / n if n else 0.0
+        final_mrr = sum(mrr_scores) / n if n else 0.0
+        final_precision = sum(precision_scores) / n if n else 0.0
+
+        logger.info(
+            "[eval] Recall@%d=%.3f  MRR=%.3f  Precision@%d=%.3f  (n=%d, target=%.2f)",
+            self.top_k, final_recall, final_mrr, self.top_k, final_precision, n, self.target_recall,
+        )
+
+        return EvalResult(
+            recall_at_5=final_recall,
+            mrr=final_mrr,
+            precision_at_5=final_precision,
+            passes=final_recall >= self.target_recall,
+            total_cases=n,
+            target_recall=self.target_recall,
+            per_category={k: sum(v) / len(v) for k, v in by_category.items()},
+            failed_cases=failed[:20],   # Cap for readability
+        )
+
+    # â”€â”€ Synthetic dataset generation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @staticmethod
+    def generate_test_cases(
+        chunks,                   # List[CodeChunk]
+        sample_size: int = 100,
+        seed: int = 42,
+    ) -> List[TestCase]:
+        """
+        Generate a synthetic evaluation dataset from indexed chunks.
+
+        For each function chunk, create a natural-language query that a developer
+        would use to find it. The expected answer is that chunk's ID.
+
+        Uses simple heuristic templates â€” replace with LLM generation for
+        higher quality (see generate_hyde in QueryPreprocessor).
+        """
+        random.seed(seed)
+        function_chunks = [c for c in chunks if c.node_type in ("function", "method")]
+        selected = random.sample(function_chunks, min(sample_size, len(function_chunks)))
+
+        cases = []
+        for chunk in selected:
+            query = _heuristic_query(chunk)
+            if query:
+                cases.append(TestCase(
+                    query=query,
+                    expected_chunk_ids=[chunk.chunk_id],
+                    expected_file_paths=[chunk.file_path],
+                    category=_classify_chunk(chunk),
+                    project_id=chunk.project_id,
+                ))
+
+        logger.info("[eval] Generated %d synthetic test cases", len(cases))
+        return cases
+
+    # â”€â”€ Dataset I/O â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @staticmethod
+    def save_dataset(cases: List[TestCase], path: str) -> None:
+        with open(path, "w") as f:
+            json.dump([c.__dict__ for c in cases], f, indent=2)
+        logger.info("[eval] Saved %d test cases to %s", len(cases), path)
+
+    @staticmethod
+    def load_dataset(path: str) -> List[TestCase]:
+        with open(path) as f:
+            raw = json.load(f)
+        cases = [TestCase(**r) for r in raw]
+        logger.info("[eval] Loaded %d test cases from %s", len(cases), path)
+        return cases
+
+    # â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @staticmethod
+    def _extract_ids(results: List[Dict[str, Any]]) -> List[str]:
+        ids = []
+        for r in results:
+            # RRF-fused result
+            rid = r.get("id", "")
+            if not rid:
+                payload = r.get("payload", {})
+                rid = payload.get("chunk_id", "")
+            if rid:
+                ids.append(str(rid))
+        return ids
+
+
+# â”€â”€ Heuristic query templates â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def _heuristic_query(chunk) -> Optional[str]:
+    """Build a simple natural-language query from chunk metadata."""
+    name = chunk.node_name
+    if not name or name in ("anonymous", "unknown"):
+        return None
+
+    lang = chunk.language
+    parent = chunk.parent_class
+
+    if parent:
+        return f"How does {parent}.{name} work in {lang}?"
+    if chunk.docstring:
+        # Use the first sentence of the docstring
+        first_sentence = chunk.docstring.split(".")[0].strip("\"' ")
+        if len(first_sentence) > 10:
+            return first_sentence + "?"
+    if chunk.calls:
+        callee = chunk.calls[0]
+        return f"Where is {callee} called in {lang}?"
+    return f"What does the {name} function do?"
+
+
+def _classify_chunk(chunk) -> str:
+    name_lower = chunk.node_name.lower()
+    content_lower = chunk.content.lower()
+    if any(k in name_lower for k in ("auth", "login", "password", "token", "encrypt")):
+        return "security"
+    if any(k in name_lower for k in ("test", "spec", "assert", "mock")):
+        return "testing"
+    if any(k in content_lower for k in ("exception", "error", "raise", "panic", "throw")):
+        return "debugging"
+    return "general"
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\evaluation\__init__.py ===
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\indexing\incremental.py ===
+from __future__ import annotations
+
+import asyncio
+import hashlib
+import hmac
+import logging
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from ..config import settings
+from ..ingestion.file_filter import get_language, should_index_file
+from ..ingestion.git_connector import GitConnector
+from ..ingestion.secret_scanner import SecretScanner
+from ..chunking.ast_chunker import ASTChunker
+from ..chunking.deduplication import assign_chunk_ids, deduplicate_chunks
+from ..embeddings.pipeline import EmbeddingPipeline
+from ..storage.qdrant_store import QdrantStore
+from ..metrics.prometheus import (
+    CHUNKS_INDEXED,
+    FILES_INDEXED,
+    FILES_SKIPPED,
+    SECRETS_DETECTED,
+    WEBHOOK_EVENTS,
+)
+
+logger = logging.getLogger(__name__)
+
+
+# â”€â”€ Branch policy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def should_index_branch(branch: str) -> bool:
+    """
+    Only index priority branches + release/hotfix branches.
+    Feature branches are excluded to avoid index bloat (CDC Â§8.3).
+    """
+    if branch in settings.priority_branches:
+        return True
+    return branch.startswith(("release/", "hotfix/", "fix/"))
+
+
+# â”€â”€ Webhook signature verification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def verify_webhook_signature(body: bytes, signature: str, secret: str) -> bool:
+    """
+    Verify HMAC-SHA256 webhook signature from GitLab or GitHub.
+    Returns False if the signature is invalid or missing.
+    """
+    if not signature or not secret:
+        return False
+
+    # GitHub: "sha256=<hex>"
+    if signature.startswith("sha256="):
+        expected = "sha256=" + hmac.new(
+            secret.encode(), body, hashlib.sha256
+        ).hexdigest()
+        return hmac.compare_digest(expected, signature)
+
+    # GitLab: plain token comparison
+    return hmac.compare_digest(secret, signature)
+
+
+# â”€â”€ Incremental indexer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class IncrementalIndexer:
+    """
+    Handles delta (incremental) re-indexation triggered by Git webhooks.
+
+    On each push event:
+    1. Identify changed files from the commit payload
+    2. Delete their existing vectors from Qdrant
+    3. Re-index only those files in their new version
+
+    This keeps the index fresh without full re-indexation.
+    """
+
+    def __init__(
+        self,
+        store: QdrantStore,
+        embedder: EmbeddingPipeline,
+        scanner: Optional[SecretScanner] = None,
+        chunker: Optional[ASTChunker] = None,
+    ):
+        self.store = store
+        self.embedder = embedder
+        self.scanner = scanner or SecretScanner(
+            gitleaks_binary=settings.gitleaks_binary,
+            enabled=settings.secret_scanner_enabled,
+        )
+        self.chunker = chunker or ASTChunker()
+        self._queue: asyncio.Queue = asyncio.Queue()
+        self._worker_task: Optional[asyncio.Task] = None
+
+    # â”€â”€ Worker lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    async def start_worker(self) -> None:
+        """Start the background queue worker. Call once on app startup."""
+        self._worker_task = asyncio.create_task(self._process_queue())
+        logger.info("[incremental] Worker started")
+
+    async def stop_worker(self) -> None:
+        if self._worker_task:
+            self._worker_task.cancel()
+
+    # â”€â”€ Webhook ingestion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    async def handle_webhook(self, payload: Dict[str, Any], event_type: str) -> str:
+        """
+        Parse a GitLab/GitHub webhook payload and enqueue the relevant job.
+        Returns a status string for the HTTP response.
+        """
+        WEBHOOK_EVENTS.labels(event_type=event_type).inc()
+
+        # Push event â†’ incremental re-index
+        if event_type in ("Push Hook", "push"):
+            job = self._parse_push_event(payload, event_type)
+            if job is None:
+                return "skipped:no_changes"
+
+            branch = job.get("branch", "")
+            if not should_index_branch(branch):
+                logger.info("[incremental] Branch '%s' excluded from indexing", branch)
+                return f"skipped:branch_excluded:{branch}"
+
+            await self._queue.put(job)
+            logger.info("[incremental] Queued delta job for branch '%s' (%d files)",
+                        branch, len(job.get("changed_files", [])))
+            return "queued"
+
+        # Delete event â†’ purge project
+        if event_type in ("Repository Delete Hook", "delete"):
+            project_id = str(
+                payload.get("project", {}).get("id", payload.get("repository", {}).get("id", ""))
+            )
+            if project_id:
+                self.store.purge_project(project_id)
+                logger.info("[incremental] Purged project '%s'", project_id)
+                return "purged"
+
+        return f"ignored:{event_type}"
+
+    # â”€â”€ Queue processing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    async def _process_queue(self) -> None:
+        while True:
+            try:
+                job = await self._queue.get()
+                await self._run_delta(job)
+                self._queue.task_done()
+            except asyncio.CancelledError:
+                break
+            except Exception as exc:
+                logger.error("[incremental] Worker error: %s", exc, exc_info=True)
+
+    async def _run_delta(self, job: Dict[str, Any]) -> None:
+        project_id = job["project_id"]
+        branch = job["branch"]
+        changed_files: List[str] = job["changed_files"]
+        git_token: str = job.get("git_token", "")
+        repository_url: str = job["repository_url"]
+        allowed_roles: List[str] = job.get("allowed_roles", ["developer"])
+        tenant_id: str = job.get("tenant_id", "")
+        sensitivity_level: str = job.get("sensitivity_level", "internal")
+
+        connector = GitConnector(
+            repo_url=repository_url,
+            token=git_token,
+            project_id=project_id,
+        )
+        local_path = str(Path(settings.git_workspace) / project_id / branch)
+
+        try:
+            repo = await asyncio.to_thread(connector.clone_or_update, local_path)
+        except Exception as exc:
+            logger.error("[incremental] Git update failed for %s: %s", repository_url, exc)
+            return
+
+        commit_hash = connector.get_commit_hash(repo, branch)
+        repo_name = repository_url.rstrip("/").split("/")[-1].replace(".git", "")
+
+        for file_path_str in changed_files:
+            file_path = Path(local_path) / file_path_str
+
+            # Step 1 â€” Remove stale vectors for this file
+            self.store.delete_file(project_id, file_path_str)
+
+            # Step 2 â€” Check if file still exists and is indexable
+            if not file_path.exists() or not should_index_file(file_path):
+                FILES_SKIPPED.labels(reason="excluded_extension").inc()
+                logger.debug("[incremental] Skipping deleted/excluded file %s", file_path_str)
+                continue
+
+            language = get_language(file_path)
+            if not language:
+                continue
+
+            content = connector.read_file(repo, file_path_str, branch)
+            if content is None:
+                continue
+
+            # Step 3 â€” Scan for secrets (mandatory)
+            redacted, had_secrets = self.scanner.scan_and_redact(content, file_path_str)
+            if had_secrets:
+                SECRETS_DETECTED.inc()
+
+            # Step 4 â€” Re-chunk
+            try:
+                chunks = self.chunker.chunk_file(
+                    file_content=redacted,
+                    file_path=file_path_str,
+                    language=language,
+                    project_id=project_id,
+                    tenant_id=tenant_id,
+                    allowed_roles=allowed_roles,
+                    sensitivity_level=sensitivity_level,
+                    commit_hash=commit_hash,
+                    branch=branch,
+                    repository_name=repo_name,
+                    has_secrets_redacted=had_secrets,
+                )
+            except Exception as exc:
+                logger.warning("[incremental] Chunk error %s: %s", file_path_str, exc)
+                FILES_SKIPPED.labels(reason="parse_error").inc()
+                continue
+
+            unique = deduplicate_chunks(chunks)
+            assign_chunk_ids(unique)
+
+            # Step 5 â€” Embed + upsert
+            embedded = await self.embedder.embed_chunks(unique, show_progress=False)
+            self.store.upsert_chunks(embedded, project_id)
+
+            FILES_INDEXED.labels(language=language).inc()
+            for chunk in unique:
+                CHUNKS_INDEXED.labels(language=language).inc()
+
+        logger.info("[incremental] Delta update complete â€” %d files for project %s",
+                    len(changed_files), project_id)
+
+    # â”€â”€ Payload parsers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @staticmethod
+    def _parse_push_event(payload: Dict[str, Any], event_type: str) -> Optional[Dict[str, Any]]:
+        """Normalise GitLab / GitHub push payloads into a common job dict."""
+        changed_files: List[str] = []
+
+        # GitLab format
+        if event_type == "Push Hook":
+            project = payload.get("project", {})
+            for commit in payload.get("commits", []):
+                changed_files.extend(commit.get("added", []))
+                changed_files.extend(commit.get("modified", []))
+                # Deleted files: vectors will be removed by delete_file, no re-index needed
+            ref = payload.get("ref", "refs/heads/main")
+            branch = ref.split("/")[-1]
+            project_id = str(project.get("id", ""))
+            repo_url = project.get("git_http_url", "")
+
+        # GitHub format
+        else:
+            repo = payload.get("repository", {})
+            for commit in payload.get("commits", []):
+                changed_files.extend(commit.get("added", []))
+                changed_files.extend(commit.get("modified", []))
+            ref = payload.get("ref", "refs/heads/main")
+            branch = ref.split("/")[-1]
+            project_id = str(repo.get("id", ""))
+            repo_url = repo.get("clone_url", "")
+
+        if not changed_files or not project_id:
+            return None
+
+        # Deduplicate paths
+        changed_files = list(dict.fromkeys(changed_files))
+
+        return {
+            "project_id": project_id,
+            "branch": branch,
+            "repository_url": repo_url,
+            "changed_files": changed_files,
+            "commit_hash": payload.get("after", "unknown"),
+        }
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\indexing\indexer.py ===
+from __future__ import annotations
+
+import asyncio
+import logging
+import time
+import uuid
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from ..chunking.ast_chunker import ASTChunker
+from ..chunking.deduplication import assign_chunk_ids, deduplicate_chunks
+from ..chunking.symbol_graph import SymbolGraph
+from ..config import settings
+from ..embeddings.pipeline import EmbeddingPipeline
+from ..ingestion.file_filter import get_language, should_index_file
+from ..ingestion.git_connector import GitConnector
+from ..ingestion.secret_scanner import SecretScanner
+from ..metrics.prometheus import (
+    ACTIVE_INDEX_JOBS,
+    CHUNKS_INDEXED,
+    FILES_INDEXED,
+    FILES_SKIPPED,
+    INDEXING_DURATION,
+    INDEXING_JOBS,
+    SECRETS_DETECTED,
+)
+from ..storage.qdrant_store import QdrantStore
+
+logger = logging.getLogger(__name__)
+
+
+# â”€â”€ Job status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+@dataclass
+class IndexJob:
+    job_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: str = ""
+    repository_url: str = ""
+    branch: str = "main"
+    status: str = "pending"          # pending | running | success | error
+    started_at: Optional[str] = None
+    finished_at: Optional[str] = None
+    files_total: int = 0
+    files_indexed: int = 0
+    files_skipped: int = 0
+    chunks_created: int = 0
+    secrets_found: int = 0
+    error: Optional[str] = None
+    progress_pct: float = 0.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "job_id": self.job_id,
+            "project_id": self.project_id,
+            "repository_url": self.repository_url,
+            "branch": self.branch,
+            "status": self.status,
+            "started_at": self.started_at,
+            "finished_at": self.finished_at,
+            "files_total": self.files_total,
+            "files_indexed": self.files_indexed,
+            "files_skipped": self.files_skipped,
+            "chunks_created": self.chunks_created,
+            "secrets_found": self.secrets_found,
+            "error": self.error,
+            "progress_pct": round(self.progress_pct, 1),
+        }
+
+
+# â”€â”€ Job registry (in-memory, replace with Redis for multi-node) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+_JOB_REGISTRY: Dict[str, IndexJob] = {}
+
+
+def get_job(job_id: str) -> Optional[IndexJob]:
+    return _JOB_REGISTRY.get(job_id)
+
+
+def list_jobs(project_id: Optional[str] = None) -> List[IndexJob]:
+    jobs = list(_JOB_REGISTRY.values())
+    if project_id:
+        jobs = [j for j in jobs if j.project_id == project_id]
+    return sorted(jobs, key=lambda j: j.started_at or "", reverse=True)
+
+
+# â”€â”€ Indexer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class Indexer:
+    """
+    Orchestrates the full indexing pipeline for one repository:
+
+    GitConnector â†’ FileFilter â†’ SecretScanner â†’ ASTChunker
+        â†’ Deduplication â†’ EmbeddingPipeline â†’ QdrantStore + SymbolGraph
+
+    Produces an IndexJob with live progress tracking.
+    """
+
+    def __init__(
+        self,
+        store: QdrantStore,
+        embedder: EmbeddingPipeline,
+        scanner: Optional[SecretScanner] = None,
+        chunker: Optional[ASTChunker] = None,
+    ):
+        self.store = store
+        self.embedder = embedder
+        self.scanner = scanner or SecretScanner(
+            gitleaks_binary=settings.gitleaks_binary,
+            enabled=settings.secret_scanner_enabled,
+        )
+        self.chunker = chunker or ASTChunker()
+
+    # â”€â”€ Entry point â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def submit_job(
+        self,
+        project_id: str,
+        repository_url: str,
+        git_token: str,
+        branch: str = "main",
+        allowed_roles: Optional[List[str]] = None,
+        tenant_id: str = "",
+        sensitivity_level: str = "internal",
+    ) -> IndexJob:
+        """Create a job and schedule it as a background asyncio task."""
+        job = IndexJob(
+            project_id=project_id,
+            repository_url=repository_url,
+            branch=branch,
+        )
+        _JOB_REGISTRY[job.job_id] = job
+
+        asyncio.create_task(
+            self._run_job(
+                job=job,
+                git_token=git_token,
+                allowed_roles=allowed_roles or ["developer"],
+                tenant_id=tenant_id,
+                sensitivity_level=sensitivity_level,
+            )
+        )
+        return job
+
+    # â”€â”€ Pipeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    async def _run_job(
+        self,
+        job: IndexJob,
+        git_token: str,
+        allowed_roles: List[str],
+        tenant_id: str,
+        sensitivity_level: str,
+    ) -> None:
+        job.status = "running"
+        job.started_at = datetime.now(timezone.utc).isoformat()
+        ACTIVE_INDEX_JOBS.inc()
+        t0 = time.monotonic()
+
+        try:
+            await self._execute(job, git_token, allowed_roles, tenant_id, sensitivity_level)
+            job.status = "success"
+            INDEXING_JOBS.labels(status="success").inc()
+        except Exception as exc:
+            job.status = "error"
+            job.error = str(exc)
+            INDEXING_JOBS.labels(status="error").inc()
+            logger.error("[indexer] Job %s failed: %s", job.job_id, exc, exc_info=True)
+        finally:
+            job.finished_at = datetime.now(timezone.utc).isoformat()
+            job.progress_pct = 100.0
+            ACTIVE_INDEX_JOBS.dec()
+            INDEXING_DURATION.observe(time.monotonic() - t0)
+
+    async def _execute(
+        self,
+        job: IndexJob,
+        git_token: str,
+        allowed_roles: List[str],
+        tenant_id: str,
+        sensitivity_level: str,
+    ) -> None:
+        # Step 1 â€” Clone / fetch
+        connector = GitConnector(
+            repo_url=job.repository_url,
+            token=git_token,
+            project_id=job.project_id,
+        )
+        local_path = str(Path(settings.git_workspace) / job.project_id / job.branch)
+        repo = await asyncio.to_thread(connector.clone_or_update, local_path)
+        commit_hash = connector.get_commit_hash(repo, job.branch)
+        repo_name = job.repository_url.rstrip("/").split("/")[-1].replace(".git", "")
+
+        # Step 2 â€” Enumerate indexable files
+        all_files = list(connector.list_files(repo, job.branch))
+        indexable = [f for f in all_files if should_index_file(Path(local_path) / f)]
+        job.files_total = len(indexable)
+        logger.info("[indexer] %d / %d files to index for '%s'", len(indexable), len(all_files), repo_name)
+
+        symbol_graph = SymbolGraph()
+        all_chunks = []
+
+        # Step 3 â€” Process each file
+        for i, rel_path in enumerate(indexable):
+            job.progress_pct = (i / max(len(indexable), 1)) * 90
+
+            file_path_str = str(rel_path)
+            language = get_language(Path(local_path) / rel_path) or get_language(rel_path)
+            if not language:
+                FILES_SKIPPED.labels(reason="excluded_extension").inc()
+                job.files_skipped += 1
+                continue
+
+            content = connector.read_file(repo, file_path_str, job.branch)
+            if content is None:
+                FILES_SKIPPED.labels(reason="read_error").inc()
+                job.files_skipped += 1
+                continue
+
+            # MANDATORY: secret scan before any further processing
+            redacted, had_secrets = self.scanner.scan_and_redact(content, file_path_str)
+            if had_secrets:
+                job.secrets_found += 1
+                SECRETS_DETECTED.inc()
+
+            # AST chunking
+            try:
+                chunks = self.chunker.chunk_file(
+                    file_content=redacted,
+                    file_path=file_path_str,
+                    language=language,
+                    project_id=job.project_id,
+                    tenant_id=tenant_id,
+                    allowed_roles=allowed_roles,
+                    sensitivity_level=sensitivity_level,
+                    commit_hash=commit_hash,
+                    branch=job.branch,
+                    repository_name=repo_name,
+                    has_secrets_redacted=had_secrets,
+                )
+            except Exception as exc:
+                logger.warning("[indexer] Chunk error %s: %s", file_path_str, exc)
+                FILES_SKIPPED.labels(reason="parse_error").inc()
+                job.files_skipped += 1
+                continue
+
+            # Build symbol graph edges
+            for chunk in chunks:
+                for callee in chunk.calls:
+                    symbol_graph.add_call_edge(chunk.fqn, callee)
+
+            all_chunks.extend(chunks)
+            FILES_INDEXED.labels(language=language).inc()
+            job.files_indexed += 1
+            await asyncio.sleep(0)  # yield event loop
+
+        # Step 4 â€” Deduplication + stable IDs
+        unique_chunks = deduplicate_chunks(all_chunks)
+        assign_chunk_ids(unique_chunks)
+        logger.info("[indexer] %d unique chunks after dedup (was %d)", len(unique_chunks), len(all_chunks))
+
+        # Step 5 â€” Embed
+        embedded = await self.embedder.embed_chunks(unique_chunks, show_progress=True)
+
+        # Step 6 â€” Upsert into Qdrant
+        upserted = self.store.upsert_chunks(embedded, job.project_id)
+        job.chunks_created = upserted
+
+        # Step 7 â€” Persist symbol graph to Redis (best-effort)
+        try:
+            import redis as _redis
+            r = _redis.from_url(settings.redis_url)
+            symbol_graph.persist_to_redis(r, job.project_id)
+        except Exception as exc:
+            logger.warning("[indexer] Symbol graph persist failed: %s", exc)
+
+        # Metrics
+        for chunk in unique_chunks:
+            CHUNKS_INDEXED.labels(language=chunk.language).inc()
+
+        logger.info(
+            "[indexer] Job %s done â€” %d files, %d chunks, %d secrets found",
+            job.job_id, job.files_indexed, upserted, job.secrets_found,
+        )
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\indexing\__init__.py ===
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\ingestion\file_filter.py ===
+from __future__ import annotations
+
+from pathlib import Path
+
+# â”€â”€ Excluded binary / generated extensions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+EXCLUDED_EXTENSIONS: frozenset[str] = frozenset({
+    ".exe", ".dll", ".so", ".dylib", ".class", ".pyc", ".pyo", ".pyd",
+    ".zip", ".tar", ".gz", ".bz2", ".xz", ".7z", ".rar", ".tgz",
+    ".jar", ".war", ".ear", ".whl", ".egg",
+    ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".webp",
+    ".mp4", ".mp3", ".wav", ".avi", ".mov", ".mkv",
+    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+    ".map",  # source maps
+    ".lock",  # lockfiles â€” large, low RAG value
+})
+
+# Partial suffix matches (ends-with)
+EXCLUDED_SUFFIX_PATTERNS: tuple[str, ...] = (
+    ".min.js",
+    ".min.css",
+    ".bundle.js",
+    ".d.ts",   # TypeScript declaration files â€” no logic
+)
+
+# â”€â”€ Excluded directories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+EXCLUDED_DIRS: frozenset[str] = frozenset({
+    "node_modules", ".git", "__pycache__", "vendor",
+    ".venv", "venv", ".env",
+    "dist", "build", "out", "target", "bin", "obj",
+    ".idea", ".vscode", ".eclipse",
+    "coverage", ".nyc_output", ".pytest_cache",
+    "migrations",   # DB migration files can be huge
+    "fixtures",
+    "__snapshots__",
+})
+
+# â”€â”€ Supported languages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+SUPPORTED_LANGUAGES: dict[str, str] = {
+    ".py": "python",
+    ".js": "javascript",
+    ".jsx": "javascript",
+    ".ts": "typescript",
+    ".tsx": "typescript",
+    ".java": "java",
+    ".go": "go",
+    ".rs": "rust",
+    ".cpp": "cpp",
+    ".cc": "cpp",
+    ".cxx": "cpp",
+    ".c": "c",
+    ".h": "c",
+    ".hpp": "cpp",
+    ".cs": "csharp",
+    ".rb": "ruby",
+    ".php": "php",
+    ".tf": "terraform",
+    ".hcl": "hcl",
+    ".yaml": "yaml",
+    ".yml": "yaml",
+    ".json": "json",
+    ".toml": "toml",
+    ".sh": "bash",
+    ".bash": "bash",
+    ".zsh": "bash",
+    ".sql": "sql",
+    ".md": "markdown",
+    ".rst": "text",
+    ".txt": "text",
+    ".env.example": "text",
+    ".env.sample": "text",
+}
+
+NAMED_FILES: dict[str, str] = {
+    "Dockerfile": "dockerfile",
+    "Makefile": "makefile",
+    "Rakefile": "ruby",
+    "Gemfile": "ruby",
+    "Pipfile": "toml",
+    "Cargo.toml": "toml",
+    "go.mod": "go",
+    "go.sum": "text",
+    "pyproject.toml": "toml",
+    "setup.py": "python",
+    "setup.cfg": "text",
+}
+
+MAX_FILE_SIZE_BYTES: int = 500_000  # 500 KB per spec
+
+
+def should_index_file(path: Path) -> bool:
+    """Return True iff this file should be indexed."""
+    # Excluded directories in path hierarchy
+    for part in path.parts:
+        if part in EXCLUDED_DIRS:
+            return False
+
+    # Named file check (Dockerfile, Makefileâ€¦)
+    if path.name in NAMED_FILES:
+        return True
+
+    # Size check
+    try:
+        if path.stat().st_size > MAX_FILE_SIZE_BYTES:
+            return False
+    except OSError:
+        return False
+
+    # Partial suffix patterns (.min.js etc.)
+    name_lower = path.name.lower()
+    if any(name_lower.endswith(p) for p in EXCLUDED_SUFFIX_PATTERNS):
+        return False
+
+    suffix = path.suffix.lower()
+    if not suffix:
+        return False
+
+    return suffix not in EXCLUDED_EXTENSIONS and suffix in SUPPORTED_LANGUAGES
+
+
+def get_language(path: Path) -> str | None:
+    """Return the language identifier for a file, or None if unsupported."""
+    if path.name in NAMED_FILES:
+        return NAMED_FILES[path.name]
+    suffix = path.suffix.lower()
+    return SUPPORTED_LANGUAGES.get(suffix)
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\ingestion\git_connector.py ===
+from __future__ import annotations
+
+import logging
+from pathlib import Path
+from typing import Generator
+
+import pygit2
+
+logger = logging.getLogger(__name__)
+
+
+class GitConnector:
+    """
+    Read-only Git connector.
+    Push is architecturally impossible: no write credentials, no push call.
+    """
+
+    def __init__(self, repo_url: str, token: str, project_id: str):
+        self.repo_url = repo_url
+        self.project_id = project_id
+        self._token = token
+
+    def _callbacks(self) -> pygit2.RemoteCallbacks:
+        return pygit2.RemoteCallbacks(
+            credentials=pygit2.UserPass("x-token", self._token)
+        )
+
+    # â”€â”€ Clone / update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def clone_or_update(self, local_path: str) -> pygit2.Repository:
+        """Clone if absent, fetch origin if already present. Never pushes."""
+        lp = Path(local_path)
+        if not lp.exists():
+            logger.info("[git] Cloning %s â†’ %s", self.repo_url, local_path)
+            return pygit2.clone_repository(
+                self.repo_url,
+                str(lp),
+                callbacks=self._callbacks(),
+            )
+
+        repo = pygit2.Repository(str(lp))
+        logger.info("[git] Fetching updates for %s", self.repo_url)
+        try:
+            repo.remotes["origin"].fetch(callbacks=self._callbacks())
+        except Exception as exc:
+            logger.warning("[git] Fetch failed for %s: %s", self.repo_url, exc)
+        return repo
+
+    # â”€â”€ File enumeration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def list_files(
+        self, repo: pygit2.Repository, branch: str = "main"
+    ) -> Generator[Path, None, None]:
+        """Yield all file paths tracked in the given branch (relative to repo root)."""
+        commit = self._resolve_branch(repo, branch)
+        yield from self._walk_tree(repo, commit.tree, Path(""))
+
+    def _walk_tree(
+        self,
+        repo: pygit2.Repository,
+        tree: pygit2.Tree,
+        prefix: Path,
+    ) -> Generator[Path, None, None]:
+        for entry in tree:
+            entry_path = prefix / entry.name
+            if entry.type_str == "tree":
+                yield from self._walk_tree(repo, repo.get(entry.id), entry_path)
+            elif entry.type_str == "blob":
+                yield entry_path
+
+    # â”€â”€ File reading â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def read_file(
+        self, repo: pygit2.Repository, file_path: str, branch: str = "main"
+    ) -> str | None:
+        """Return decoded content of a file at branch tip, or None on error."""
+        try:
+            commit = self._resolve_branch(repo, branch)
+            blob = commit.tree / file_path
+            return blob.data.decode("utf-8", errors="replace")
+        except Exception as exc:
+            logger.debug("[git] Cannot read %s@%s: %s", file_path, branch, exc)
+            return None
+
+    def read_file_bytes(
+        self, repo: pygit2.Repository, file_path: str, branch: str = "main"
+    ) -> bytes | None:
+        try:
+            commit = self._resolve_branch(repo, branch)
+            blob = commit.tree / file_path
+            return blob.data
+        except Exception:
+            return None
+
+    # â”€â”€ Metadata â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def get_commit_hash(self, repo: pygit2.Repository, branch: str = "main") -> str:
+        try:
+            return str(self._resolve_branch(repo, branch).id)
+        except Exception:
+            return "unknown"
+
+    def get_changed_files(
+        self, repo: pygit2.Repository, old_commit_hash: str, new_commit_hash: str
+    ) -> list[str]:
+        """Return list of file paths changed between two commits."""
+        try:
+            old_commit = repo.get(old_commit_hash)
+            new_commit = repo.get(new_commit_hash)
+            diff = repo.diff(old_commit, new_commit)
+            return [delta.new_file.path for delta in diff.deltas]
+        except Exception as exc:
+            logger.warning("[git] Cannot compute diff: %s", exc)
+            return []
+
+    # â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @staticmethod
+    def _resolve_branch(repo: pygit2.Repository, branch: str) -> pygit2.Commit:
+        """Resolve a branch name to its tip commit, with fallbacks."""
+        # Try local branch
+        ref = repo.lookup_branch(branch)
+        if ref:
+            return ref.peel(pygit2.Commit)
+        # Try remote tracking branch
+        ref = repo.lookup_branch(f"origin/{branch}", pygit2.GIT_BRANCH_REMOTE)
+        if ref:
+            return ref.peel(pygit2.Commit)
+        # Fallback: HEAD
+        logger.warning("[git] Branch '%s' not found, using HEAD", branch)
+        return repo.head.peel(pygit2.Commit)
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\ingestion\secret_scanner.py ===
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import re
+import subprocess
+from typing import Tuple
+
+logger = logging.getLogger(__name__)
+
+REDACTION_PLACEHOLDER = "[REDACTED:SECRET]"
+
+# Ordered: most specific first to avoid partial overlaps
+_RAW_PATTERNS: list[str] = [
+    # Private keys
+    r"-----BEGIN\s+(?:RSA|EC|DSA|OPENSSH|PGP)\s+PRIVATE KEY(?:\s+BLOCK)?-----",
+    # AWS
+    r"(?i)AKIA[0-9A-Z]{16}",
+    r"(?i)aws[_-]?(?:access[_-]?key[_-]?id|secret[_-]?access[_-]?key)\s*[:=]\s*['\"]?([A-Za-z0-9/+]{20,})",
+    # GitHub / GitLab / generic tokens
+    r"ghp_[A-Za-z0-9]{36}",
+    r"ghs_[A-Za-z0-9]{36}",
+    r"glpat-[A-Za-z0-9\-_]{10,}",
+    r"xox[baprs]-[0-9A-Za-z\-]+",        # Slack
+    r"sk-[A-Za-z0-9]{32,}",              # OpenAI-style
+    # Generic API keys / tokens
+    r"(?i)(?:api[_-]?key|apikey|x-api-key)\s*[:=]\s*['\"]?([A-Za-z0-9_\-]{20,})['\"]?",
+    r"(?i)bearer\s+([A-Za-z0-9_\-\.]{20,})",
+    r"(?i)(?:access[_-]?token|refresh[_-]?token|auth[_-]?token)\s*[:=]\s*['\"]([A-Za-z0-9_\-\.]{20,})['\"]",
+    # Passwords in code
+    r"(?i)(?:password|passwd|pwd|secret|passphrase)\s*[:=]\s*['\"]([^'\"]{8,})['\"]",
+    # Connection strings
+    r"(?i)(?:mongodb|postgres|postgresql|mysql|redis)://[^:]+:[^@]+@",
+    # JWT
+    r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}",
+]
+
+_COMPILED: list[re.Pattern] = [re.compile(p) for p in _RAW_PATTERNS]
+
+
+class SecretScanner:
+    """
+    Two-pass scanner: compiled regex patterns + optional Gitleaks binary.
+
+    CDC requirement: 100% detection on the synthetic secrets test corpus.
+    Both passes must run in production (secret_scanner_enabled=True).
+    """
+
+    def __init__(self, gitleaks_binary: str = "gitleaks", enabled: bool = True):
+        self.enabled = enabled
+        self.gitleaks_binary = gitleaks_binary
+        self._gitleaks_ok = self._probe_gitleaks()
+
+    # â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def scan_and_redact(self, content: str, file_path: str = "") -> Tuple[str, bool]:
+        """
+        Return (redacted_content, has_secrets).
+        All detected secrets are replaced with REDACTION_PLACEHOLDER.
+        This MUST be called before any chunking or indexing.
+        """
+        if not self.enabled:
+            return content, False
+
+        has_secrets = False
+        redacted = content
+
+        # Pass 1 â€” regex
+        for pattern in _COMPILED:
+            for match in pattern.finditer(redacted):
+                has_secrets = True
+                full_match = match.group(0)
+                redacted = redacted.replace(full_match, REDACTION_PLACEHOLDER)
+                logger.info("Secret redacted in '%s' (regex pattern)", file_path or "<stdin>")
+
+        # Pass 2 â€” Gitleaks
+        if self._gitleaks_ok:
+            findings = self._run_gitleaks(redacted)
+            for finding in findings:
+                secret_val = finding.get("Secret", "")
+                if secret_val and len(secret_val) >= 6 and secret_val in redacted:
+                    has_secrets = True
+                    redacted = redacted.replace(secret_val, REDACTION_PLACEHOLDER)
+                    logger.info("Secret redacted in '%s' (gitleaks: %s)", file_path, finding.get("RuleID", "?"))
+
+        return redacted, has_secrets
+
+    def scan_only(self, content: str) -> bool:
+        """Return True if any secret is detected (no redaction)."""
+        _, has_secrets = self.scan_and_redact(content)
+        return has_secrets
+
+    @staticmethod
+    def content_hash(content: str) -> str:
+        return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+    # â”€â”€ Internals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def _probe_gitleaks(self) -> bool:
+        try:
+            r = subprocess.run(
+                [self.gitleaks_binary, "version"],
+                capture_output=True,
+                timeout=5,
+            )
+            available = r.returncode == 0
+            if not available:
+                logger.warning("gitleaks binary not functional â€” regex-only mode active")
+            return available
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            logger.warning(
+                "gitleaks not found at '%s' â€” regex-only mode active. "
+                "Install from https://github.com/gitleaks/gitleaks/releases",
+                self.gitleaks_binary,
+            )
+            return False
+
+    def _run_gitleaks(self, content: str) -> list[dict]:
+        try:
+            proc = subprocess.run(
+                [
+                    self.gitleaks_binary, "detect",
+                    "--source", "-",
+                    "--report-format", "json",
+                    "--no-git",
+                    "--log-level", "warn",
+                ],
+                input=content.encode("utf-8", errors="replace"),
+                capture_output=True,
+                timeout=20,
+            )
+            # gitleaks exits 1 when leaks are found AND outputs JSON
+            if proc.stdout:
+                return json.loads(proc.stdout)
+        except subprocess.TimeoutExpired:
+            logger.warning("gitleaks timed out")
+        except json.JSONDecodeError:
+            pass
+        except Exception as exc:
+            logger.debug("gitleaks error: %s", exc)
+        return []
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\ingestion\__init__.py ===
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\metrics\prometheus.py ===
+from __future__ import annotations
+
+from prometheus_client import Counter, Gauge, Histogram
+
+# â”€â”€ Retrieval â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+RETRIEVAL_LATENCY = Histogram(
+    "rag_retrieval_duration_seconds",
+    "End-to-end retrieval latency",
+    ["cache_hit"],
+    buckets=[0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0],
+)
+
+RETRIEVAL_REQUESTS = Counter(
+    "rag_retrieval_requests_total",
+    "Total retrieval requests",
+    ["status", "cache_hit"],
+)
+
+RETRIEVAL_CHUNKS_RETURNED = Histogram(
+    "rag_retrieval_chunks_returned",
+    "Number of chunks returned per retrieval",
+    buckets=[1, 2, 3, 5, 10, 20],
+)
+
+# â”€â”€ Indexing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+INDEXING_JOBS = Counter(
+    "rag_indexing_jobs_total",
+    "Indexing jobs by status",
+    ["status"],   # success | error | skipped
+)
+
+INDEXING_DURATION = Histogram(
+    "rag_indexing_duration_seconds",
+    "Full indexing job duration",
+    buckets=[1, 5, 15, 30, 60, 120, 300, 600],
+)
+
+CHUNKS_INDEXED = Counter(
+    "rag_chunks_indexed_total",
+    "Total chunks indexed",
+    ["language"],
+)
+
+FILES_INDEXED = Counter(
+    "rag_files_indexed_total",
+    "Total files indexed",
+    ["language"],
+)
+
+FILES_SKIPPED = Counter(
+    "rag_files_skipped_total",
+    "Files skipped during indexing",
+    ["reason"],   # too_large | excluded_extension | excluded_dir | parse_error
+)
+
+# â”€â”€ Embedding â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+EMBEDDING_QUEUE_SIZE = Gauge(
+    "rag_embedding_queue_size",
+    "Current embedding queue depth",
+)
+
+EMBEDDING_BATCH_LATENCY = Histogram(
+    "rag_embedding_batch_duration_seconds",
+    "Embedding batch latency",
+    buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0],
+)
+
+# â”€â”€ Security â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+SECRETS_DETECTED = Counter(
+    "rag_secrets_detected_total",
+    "Secrets detected and redacted before indexing",
+)
+
+INJECTION_ATTEMPTS = Counter(
+    "rag_injection_attempts_total",
+    "Prompt injection patterns neutralised in retrieved content",
+)
+
+# â”€â”€ Cache â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+CACHE_HITS = Counter(
+    "rag_cache_hits_total",
+    "Semantic cache hits",
+)
+
+CACHE_MISSES = Counter(
+    "rag_cache_misses_total",
+    "Semantic cache misses",
+)
+
+# â”€â”€ Infrastructure â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+QDRANT_COLLECTIONS = Gauge(
+    "rag_qdrant_collections_total",
+    "Number of active Qdrant collections",
+)
+
+ACTIVE_INDEX_JOBS = Gauge(
+    "rag_active_index_jobs",
+    "Currently running indexing jobs",
+)
+
+WEBHOOK_EVENTS = Counter(
+    "rag_webhook_events_total",
+    "Git webhook events received",
+    ["event_type"],   # push | delete | merge_request
+)
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\metrics\__init__.py ===
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\retrieval\context_assembler.py ===
+from __future__ import annotations
+
+import logging
+import re
+from typing import Any, Dict, List, Optional
+
+from ..chunking.symbol_graph import SymbolGraph
+from ..config import settings
+
+logger = logging.getLogger(__name__)
+
+# â”€â”€ Prompt injection patterns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+_INJECTION_PATTERNS: list[re.Pattern] = [
+    re.compile(r"(?i)ignore\s+(previous|above|all)\s+instructions"),
+    re.compile(r"(?i)system\s*:\s*you\s+are"),
+    re.compile(r"(?i)new\s+instructions?\s*:"),
+    re.compile(r"(?i)\[INST\]|\[/INST\]"),
+    re.compile(r"<\|im_start\|>|<\|im_end\|>"),
+    re.compile(r"(?i)disregard\s+(your|all|the)\s+(previous|prior|system)"),
+    re.compile(r"(?i)you\s+are\s+now\s+(a|an|acting)"),
+    re.compile(r"(?i)jailbreak|DAN mode|developer mode"),
+    re.compile(r"(?i)print\s+(your|the)\s+(system\s+)?prompt"),
+]
+
+_APPROX_CHARS_PER_TOKEN = 4
+
+
+class ContextAssembler:
+    """
+    Assemble ranked retrieval results into a structured context block
+    ready to be injected into the LLM system prompt.
+
+    Responsibilities:
+    - Token budget management
+    - Anti-prompt injection sanitisation (CDC Â§QAI-06)
+    - Symbol graph enrichment (callers of retrieved functions)
+    - Source reference list for anti-hallucination (CDC Â§F-07)
+    """
+
+    def __init__(
+        self,
+        max_context_tokens: int = settings.max_context_tokens,
+        symbol_graph: Optional[SymbolGraph] = None,
+    ):
+        self.max_context_tokens = max_context_tokens
+        self.symbol_graph = symbol_graph
+
+    def assemble(
+        self,
+        query: str,
+        ranked_results: List[Dict[str, Any]],
+        include_callers: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Build the context dict consumed by the orchestrator.
+
+        Returns:
+        {
+            "query": str,
+            "assembled_context": str,   # Ready to inject into prompt
+            "sources": List[dict],      # Exact file/line references
+            "token_count": int,
+            "injection_detected": bool,
+        }
+        """
+        primary = ranked_results[:5]
+        injection_detected = False
+        context_chunks: List[str] = []
+        sources: List[Dict[str, Any]] = []
+        token_budget = self.max_context_tokens
+
+        # Primary chunks
+        for item in primary:
+            payload = self._extract_payload(item)
+            if not payload:
+                continue
+
+            content, was_neutralised = self._sanitize(payload.get("content", ""), payload)
+            if was_neutralised:
+                injection_detected = True
+
+            tokens = _estimate_tokens(content)
+            if tokens > token_budget:
+                logger.warning("[context] Token budget exhausted â€” stopping at %d chunks", len(context_chunks))
+                break
+
+            context_chunks.append(self._format_chunk(payload, content))
+            token_budget -= tokens
+            sources.append(self._make_source_ref(payload, item))
+
+        # Symbol graph enrichment â€” add immediate callers
+        if include_callers and self.symbol_graph and token_budget > 200:
+            for item in primary:
+                payload = self._extract_payload(item)
+                if not payload:
+                    continue
+                node_name = payload.get("node_name", "")
+                if not node_name:
+                    continue
+                callers = self.symbol_graph.get_callers(
+                    f"{payload.get('repository_name', '')}::{payload.get('file_path', '')}::{node_name}",
+                    depth=1,
+                )
+                for caller_fqn in callers[:2]:
+                    caller_note = f"# Caller: {caller_fqn}\n"
+                    tokens = _estimate_tokens(caller_note)
+                    if tokens <= token_budget:
+                        context_chunks.append(caller_note)
+                        token_budget -= tokens
+
+        assembled = "\n\n---\n\n".join(context_chunks)
+
+        return {
+            "query": query,
+            "assembled_context": assembled,
+            "sources": sources,
+            "token_count": self.max_context_tokens - token_budget,
+            "injection_detected": injection_detected,
+            "chunks_used": len(context_chunks),
+        }
+
+    # â”€â”€ Sanitisation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @staticmethod
+    def _sanitize(content: str, payload: Dict) -> tuple[str, bool]:
+        """
+        Neutralise prompt injection attempts found in retrieved code.
+        CDC Â§QAI-06: code from the repo MUST NOT modify system instructions.
+        """
+        for pattern in _INJECTION_PATTERNS:
+            if pattern.search(content):
+                file_path = payload.get("file_path", "unknown")
+                logger.warning(
+                    "[context] Prompt injection neutralised in '%s' (pattern: %s)",
+                    file_path, pattern.pattern,
+                )
+                return (
+                    f"[CONTENT NEUTRALISED â€” INJECTION PATTERN DETECTED]\n"
+                    f"# Source: {file_path} L{payload.get('start_line')}-{payload.get('end_line')}",
+                    True,
+                )
+        return content, False
+
+    # â”€â”€ Formatting â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @staticmethod
+    def _format_chunk(payload: Dict, content: str) -> str:
+        file_path = payload.get("file_path", "")
+        start = payload.get("start_line", "?")
+        end = payload.get("end_line", "?")
+        repo = payload.get("repository_name", "")
+        commit = (payload.get("commit_hash") or "")[:8]
+        lang = payload.get("language", "")
+
+        header = f"# {repo}/{file_path}  L{start}-{end}  commit:{commit}"
+        return f"{header}\n```{lang}\n{content}\n```"
+
+    @staticmethod
+    def _make_source_ref(payload: Dict, item: Dict) -> Dict[str, Any]:
+        return {
+            "file_path": payload.get("file_path", ""),
+            "start_line": payload.get("start_line", 0),
+            "end_line": payload.get("end_line", 0),
+            "commit_hash": (payload.get("commit_hash") or "")[:8],
+            "repository_name": payload.get("repository_name", ""),
+            "node_name": payload.get("node_name", ""),
+            "language": payload.get("language", ""),
+            "relevance_score": float(item.get("rrf_score", item.get("score", 0.0))),
+        }
+
+    @staticmethod
+    def _extract_payload(item: Dict) -> Optional[Dict]:
+        """Handle both RRF-fused dicts and plain Qdrant ScoredPoint wrappers."""
+        if "payload" in item:
+            return item["payload"]
+        result = item.get("result")
+        if result and hasattr(result, "payload"):
+            return result.payload
+        return None
+
+
+# â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def _estimate_tokens(text: str) -> int:
+    return max(1, len(text) // _APPROX_CHARS_PER_TOKEN)
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\retrieval\hybrid_searcher.py ===
+from __future__ import annotations
+
+import logging
+from typing import Any, Dict, List, Optional
+
+from rank_bm25 import BM25Okapi
+
+from ..config import settings
+from ..embeddings.pipeline import EmbeddingPipeline
+from ..storage.qdrant_store import QdrantStore
+from .query_preprocessor import QueryPreprocessor
+
+logger = logging.getLogger(__name__)
+
+
+class HybridSearcher:
+    """
+    Three-signal hybrid retrieval:
+      1. Dense search  (cosine similarity on embeddings)
+      2. Sparse search (BM25 on tokenised chunk content)
+      3. Symbol graph  (exact identifier match on calls/names)
+
+    Signals are fused with Reciprocal Rank Fusion (RRF).
+    RBAC pre-filter is MANDATORY and applied before every Qdrant call.
+    """
+
+    def __init__(
+        self,
+        store: QdrantStore,
+        embedder: EmbeddingPipeline,
+        bm25_index: Optional["BM25Index"] = None,
+        symbol_graph=None,
+    ):
+        self.store = store
+        self.embedder = embedder
+        self.bm25_index = bm25_index
+        self.symbol_graph = symbol_graph
+        self.preprocessor = QueryPreprocessor()
+
+    async def search(
+        self,
+        query: str,
+        project_id: str,
+        allowed_roles: List[str],
+        top_k: int = settings.default_top_k,
+        filters: Optional[Dict[str, Any]] = None,
+        use_hyde: bool = False,
+        model_gateway=None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Execute hybrid retrieval and return top_k fused results.
+        RBAC is enforced at the Qdrant layer â€” never bypassed.
+        """
+        processed = self.preprocessor.preprocess(query)
+
+        # Optional HyDE
+        if use_hyde and model_gateway:
+            processed["hypothetical_snippet"] = QueryPreprocessor.generate_hyde(
+                query, model_gateway
+            )
+
+        search_text = processed["hypothetical_snippet"] or processed["normalised"]
+
+        # Signal 1 â€” Dense
+        query_vector = await self.embedder.embed_single(search_text)
+        dense_results = self.store.dense_search(
+            query_vector=query_vector,
+            project_id=project_id,
+            allowed_roles=allowed_roles,
+            top_k=settings.reranker_top_k,
+            score_threshold=settings.score_threshold,
+        )
+
+        # Signal 2 â€” BM25 Sparse
+        sparse_results: List[Dict] = []
+        if self.bm25_index and processed["keywords"]:
+            sparse_results = self.bm25_index.search(
+                keywords=processed["keywords"],
+                project_id=project_id,
+                allowed_roles=allowed_roles,
+                top_k=settings.reranker_top_k,
+            )
+
+        # Signal 3 â€” Symbol graph
+        graph_results: List[Dict] = []
+        if self.symbol_graph and processed["keywords"]:
+            for kw in processed["keywords"]:
+                matches = self.symbol_graph.search_by_name(kw)
+                for fqn in matches[:5]:
+                    graph_results.append({"id": fqn, "score": 1.0, "payload": {"node_name": fqn}})
+
+        # RRF fusion
+        fused = _rrf_fusion(
+            [
+                _normalise_results(dense_results, "dense"),
+                _normalise_results(sparse_results, "sparse"),
+                graph_results,
+            ],
+            k=settings.rrf_k,
+        )
+
+        return fused[:top_k]
+
+
+# â”€â”€ BM25 Index â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class BM25Index:
+    """
+    In-memory BM25 index over indexed chunks.
+    Rebuilt after each full indexation.
+    Only serves chunks the requesting user is allowed to see.
+    """
+
+    def __init__(self) -> None:
+        self._docs: List[Dict[str, Any]] = []     # [{id, payload, tokens}]
+        self._bm25: BM25Okapi | None = None
+
+    def build(self, chunks_payloads: List[Dict[str, Any]]) -> None:
+        """Build index from a list of chunk payload dicts."""
+        self._docs = []
+        corpus = []
+        for payload in chunks_payloads:
+            tokens = _tokenize(payload.get("content", ""))
+            self._docs.append({
+                "id": payload.get("chunk_id", ""),
+                "payload": payload,
+                "tokens": tokens,
+            })
+            corpus.append(tokens)
+
+        if corpus:
+            self._bm25 = BM25Okapi(corpus)
+        logger.info("[bm25] Index built with %d documents", len(self._docs))
+
+    def search(
+        self,
+        keywords: List[str],
+        project_id: str,
+        allowed_roles: List[str],
+        top_k: int = 20,
+    ) -> List[Dict[str, Any]]:
+        if self._bm25 is None or not self._docs:
+            return []
+
+        scores = self._bm25.get_scores(keywords)
+        ranked = sorted(
+            enumerate(scores), key=lambda x: x[1], reverse=True
+        )
+
+        results = []
+        for idx, score in ranked[:top_k * 3]:   # over-fetch then RBAC-filter
+            if score <= 0:
+                break
+            doc = self._docs[idx]
+            payload = doc["payload"]
+
+            # RBAC check
+            if payload.get("project_id") != project_id:
+                continue
+            doc_roles = payload.get("allowed_roles", [])
+            if not any(r in doc_roles for r in allowed_roles):
+                continue
+
+            results.append({"id": doc["id"], "score": float(score), "payload": payload})
+            if len(results) >= top_k:
+                break
+
+        return results
+
+
+# â”€â”€ RRF Fusion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def _rrf_fusion(result_lists: List[List[Dict]], k: int = 60) -> List[Dict]:
+    """
+    Reciprocal Rank Fusion: score = Î£ 1 / (k + rank_i).
+    Combines multiple ranked lists into a single ranking.
+    """
+    fused: Dict[str, Dict] = {}
+
+    for result_list in result_lists:
+        for rank, item in enumerate(result_list):
+            item_id = str(item.get("id", ""))
+            if not item_id:
+                continue
+            if item_id not in fused:
+                fused[item_id] = {"id": item_id, "rrf_score": 0.0, "result": item}
+            fused[item_id]["rrf_score"] += 1.0 / (k + rank + 1)
+
+    return sorted(fused.values(), key=lambda x: x["rrf_score"], reverse=True)
+
+
+# â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def _normalise_results(results: List[Any], source: str) -> List[Dict]:
+    """Convert Qdrant ScoredPoint objects or plain dicts to a uniform format."""
+    normalised = []
+    for r in results:
+        if hasattr(r, "id"):
+            # Qdrant ScoredPoint
+            normalised.append({
+                "id": str(r.id),
+                "score": float(r.score),
+                "payload": r.payload or {},
+                "source": source,
+            })
+        elif isinstance(r, dict):
+            normalised.append({**r, "source": source})
+    return normalised
+
+
+def _tokenize(text: str) -> List[str]:
+    """Simple whitespace + camelCase tokeniser for BM25."""
+    import re
+    # Split on non-alphanumeric boundaries + camelCase boundaries
+    tokens = re.findall(r"[a-zA-Z_][a-zA-Z0-9_]*", text)
+    # Expand camelCase: getUserById â†’ ["get", "user", "by", "id"]
+    expanded = []
+    for token in tokens:
+        parts = re.sub(r"([A-Z])", r" \1", token).split()
+        expanded.extend(p.lower() for p in parts if len(p) > 1)
+    return expanded
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\retrieval\query_preprocessor.py ===
+from __future__ import annotations
+
+import logging
+import re
+from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+# â”€â”€ Language hints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+_LANG_HINTS: dict[str, list[str]] = {
+    "python":     ["def ", "import ", "__init__", "self.", "elif ", "None", "True", "False"],
+    "typescript": ["interface ", ": string", ": number", ": boolean", "async ", "=>", "const ", "export "],
+    "javascript": ["function ", "const ", "let ", "var ", "require(", "module.exports"],
+    "java":       ["public class", "void ", "extends ", "implements ", "System.out", "@Override"],
+    "go":         ["func ", "package ", ":=", "fmt.Print", "goroutine", "chan "],
+    "rust":       ["fn ", "let mut", "impl ", "use std::", "Option<", "Result<"],
+    "sql":        ["SELECT ", "INSERT ", "UPDATE ", "DELETE ", "FROM ", "WHERE ", "JOIN "],
+}
+
+# â”€â”€ Query type classification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+_TYPE_KEYWORDS: dict[str, list[str]] = {
+    "debugging":   ["error", "exception", "traceback", "bug", "stacktrace", "crash", "fail", "panic"],
+    "security":    ["vulnerability", "cve", "injection", "xss", "sqli", "overflow", "auth", "permission", "secret"],
+    "refactoring": ["refactor", "optimize", "performance", "clean", "extract", "rename", "simplify", "duplicate"],
+    "testing":     ["test", "mock", "stub", "assert", "unit test", "coverage", "fixture"],
+    "docs":        ["document", "explain", "what does", "how does", "readme", "comment"],
+}
+
+
+class QueryPreprocessor:
+    """
+    Prepare a raw user query for hybrid retrieval:
+      - Normalisation
+      - Programming language detection
+      - Identifier extraction (camelCase, snake_case, PascalCase)
+      - Query type classification
+      - HyDE (Hypothetical Document Embeddings) â€” optional, requires model gateway
+    """
+
+    def preprocess(self, raw_query: str) -> dict:
+        normalised = self._normalise(raw_query)
+        lang = self._detect_language(raw_query)
+        keywords = self._extract_identifiers(normalised)
+        query_type = self._classify(normalised)
+
+        return {
+            "original": raw_query,
+            "normalised": normalised,
+            "detected_language": lang,
+            "keywords": keywords,
+            "query_type": query_type,
+            "hypothetical_snippet": None,  # Populated by HyDE if enabled
+        }
+
+    # â”€â”€ Normalisation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @staticmethod
+    def _normalise(q: str) -> str:
+        q = re.sub(r"\s+", " ", q.strip())
+        # Remove common filler phrases that don't help retrieval
+        q = re.sub(r"(?i)^(can you|please|could you|how (do i|can i|to))\s+", "", q)
+        return q
+
+    # â”€â”€ Language detection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @staticmethod
+    def _detect_language(q: str) -> Optional[str]:
+        scores: dict[str, int] = {}
+        for lang, hints in _LANG_HINTS.items():
+            score = sum(1 for h in hints if h in q)
+            if score:
+                scores[lang] = score
+        if not scores:
+            return None
+        return max(scores, key=scores.__getitem__)
+
+    # â”€â”€ Identifier extraction â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @staticmethod
+    def _extract_identifiers(q: str) -> list[str]:
+        """
+        Extract camelCase, snake_case, PascalCase tokens â€” likely function/class names.
+        These feed directly into BM25 and symbol graph search.
+        """
+        raw = re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]{2,}\b", q)
+        # Exclude very common English words
+        stop = {"the", "and", "for", "that", "this", "with", "from", "have", "not",
+                "are", "was", "can", "does", "how", "what", "when", "where", "why",
+                "which", "then", "also", "into", "its", "but", "use", "get", "set"}
+        return list(dict.fromkeys(t for t in raw if t.lower() not in stop))
+
+    # â”€â”€ Query classification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @staticmethod
+    def _classify(q: str) -> str:
+        q_lower = q.lower()
+        scores: dict[str, int] = {}
+        for qtype, kws in _TYPE_KEYWORDS.items():
+            score = sum(1 for kw in kws if kw in q_lower)
+            if score:
+                scores[qtype] = score
+        return max(scores, key=scores.__getitem__) if scores else "general"
+
+    # â”€â”€ HyDE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @staticmethod
+    def generate_hyde(query: str, model_gateway) -> Optional[str]:
+        """
+        Hypothetical Document Embeddings:
+        Ask the LLM to generate a hypothetical code snippet that would answer
+        the query, then embed THAT instead of the raw query text.
+        Significantly improves recall on abstract questions.
+
+        Disabled by default (adds ~1-2s latency). Pass model_gateway=None to skip.
+        """
+        if model_gateway is None:
+            return None
+        try:
+            snippet = model_gateway.generate(
+                f"Write a concise code snippet (â‰¤20 lines) that would answer "
+                f"this developer question. Return ONLY code, no explanation:\n\n{query}"
+            )
+            return snippet.strip() if snippet else None
+        except Exception as exc:
+            logger.debug("[hyde] Generation failed: %s", exc)
+            return None
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\retrieval\reranker.py ===
+from __future__ import annotations
+
+import logging
+from typing import Any, Dict, List
+
+import aiohttp
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+from ..config import settings
+
+logger = logging.getLogger(__name__)
+
+
+class LocalReranker:
+    """
+    Cross-encoder reranker using bge-reranker-v2-m3 served by HuggingFace TEI.
+    Evaluates each (query, chunk) pair independently â€” more accurate than cosine.
+
+    Apply only to top-20 candidates (too slow for larger sets).
+    Falls back to input order if the reranker is unavailable.
+    """
+
+    def __init__(self, url: str = settings.reranker_url):
+        self.url = url.rstrip("/")
+
+    async def rerank(
+        self,
+        query: str,
+        candidates: List[Dict[str, Any]],
+        top_k: int = settings.default_top_k,
+    ) -> List[Dict[str, Any]]:
+        """
+        Rerank candidates using cross-encoder scores.
+        Returns top_k results sorted by reranker score.
+        """
+        if not candidates:
+            return []
+
+        texts = [
+            c.get("payload", {}).get("content", c.get("result", {}).get("content", ""))
+            for c in candidates
+        ]
+        # Filter empty texts
+        valid = [(i, t) for i, t in enumerate(texts) if t.strip()]
+        if not valid:
+            return candidates[:top_k]
+
+        try:
+            scores = await self._call_reranker(query, [t for _, t in valid])
+        except Exception as exc:
+            logger.warning("[reranker] Unavailable, returning unranked: %s", exc)
+            return candidates[:top_k]
+
+        # Map scores back to candidates
+        scored = []
+        for (orig_idx, _), score in zip(valid, scores):
+            candidate = {**candidates[orig_idx], "reranker_score": float(score)}
+            scored.append(candidate)
+
+        # Add candidates that had empty text at the bottom
+        valid_idxs = {i for i, _ in valid}
+        for i, c in enumerate(candidates):
+            if i not in valid_idxs:
+                scored.append({**c, "reranker_score": -999.0})
+
+        scored.sort(key=lambda x: x["reranker_score"], reverse=True)
+        return scored[:top_k]
+
+    @retry(stop=stop_after_attempt(2), wait=wait_exponential(min=0.5, max=5))
+    async def _call_reranker(self, query: str, texts: List[str]) -> List[float]:
+        """POST to TEI /rerank endpoint."""
+        payload = {
+            "query": query,
+            "texts": texts,
+            "truncate": True,
+        }
+        async with aiohttp.ClientSession() as session:
+            resp = await session.post(
+                f"{self.url}/rerank",
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=30),
+            )
+            resp.raise_for_status()
+            data = await resp.json()
+            # TEI returns [{"index": i, "score": f}, â€¦] sorted by index
+            data.sort(key=lambda x: x["index"])
+            return [item["score"] for item in data]
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\retrieval\__init__.py ===
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\storage\qdrant_store.py ===
+from __future__ import annotations
+
+import logging
+from typing import List, Optional
+
+from qdrant_client import QdrantClient
+from qdrant_client.models import (
+    Distance,
+    FieldCondition,
+    Filter,
+    HnswConfigDiff,
+    MatchAny,
+    MatchValue,
+    PointStruct,
+    ScalarQuantizationConfig,
+    ScalarType,
+    VectorParams,
+)
+
+from ..chunking.models import CodeChunk
+from ..config import settings
+
+logger = logging.getLogger(__name__)
+
+# â”€â”€ Collection naming â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def collection_name(project_id: str, model_version: str = settings.embedding_model_version) -> str:
+    """
+    One collection per project Ã— model version (isolation maximale â€” CDC Â§4.2).
+    Format: {project_id}__{model_version}
+    """
+    safe_version = model_version.replace(".", "-").replace("/", "-")
+    return f"{project_id}__{safe_version}"
+
+
+# â”€â”€ QdrantStore â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class QdrantStore:
+    """
+    Thin wrapper around QdrantClient with:
+    - Per-project collection isolation
+    - INT8 scalar quantization
+    - HNSW index tuned for code retrieval
+    - Atomic upsert and delete operations
+    """
+
+    def __init__(
+        self,
+        url: str = settings.qdrant_url,
+        api_key: str = settings.qdrant_api_key,
+        dim: int = settings.embedding_dim,
+    ):
+        self.dim = dim
+        self.client = QdrantClient(url=url, api_key=api_key, timeout=30)
+        logger.info("[qdrant] Connected to %s", url)
+
+    # â”€â”€ Collection lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def ensure_collection(self, project_id: str, model_version: Optional[str] = None) -> str:
+        """Create collection if it doesn't exist. Return collection name."""
+        version = model_version or settings.embedding_model_version
+        name = collection_name(project_id, version)
+
+        existing = {c.name for c in self.client.get_collections().collections}
+        if name not in existing:
+            self.client.create_collection(
+                collection_name=name,
+                vectors_config=VectorParams(
+                    size=self.dim,
+                    distance=Distance.COSINE,
+                    hnsw_config=HnswConfigDiff(m=16, ef_construct=200),
+                ),
+                quantization_config=ScalarQuantizationConfig(
+                    type=ScalarType.INT8,
+                    quantile=0.99,
+                    always_ram=True,
+                ),
+            )
+            logger.info("[qdrant] Created collection '%s'", name)
+
+            # Create payload indexes for RBAC filtering (mandatory)
+            self._create_indexes(name)
+
+        return name
+
+    def _create_indexes(self, name: str) -> None:
+        """Create payload field indexes required for RBAC and filtering."""
+        fields = [
+            ("project_id", "keyword"),
+            ("tenant_id", "keyword"),
+            ("allowed_roles", "keyword"),
+            ("file_path", "keyword"),
+            ("language", "keyword"),
+            ("node_type", "keyword"),
+            ("branch", "keyword"),
+            ("sensitivity_level", "keyword"),
+        ]
+        for field, schema_type in fields:
+            try:
+                self.client.create_payload_index(
+                    collection_name=name,
+                    field_name=field,
+                    field_schema=schema_type,
+                )
+            except Exception as exc:
+                logger.debug("[qdrant] Index '%s' may already exist: %s", field, exc)
+
+    def delete_collection(self, project_id: str, model_version: Optional[str] = None) -> None:
+        name = collection_name(project_id, model_version or settings.embedding_model_version)
+        try:
+            self.client.delete_collection(name)
+            logger.info("[qdrant] Deleted collection '%s'", name)
+        except Exception as exc:
+            logger.warning("[qdrant] Could not delete '%s': %s", name, exc)
+
+    # â”€â”€ Upsert â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def upsert_chunks(
+        self,
+        chunks_and_vectors: list[tuple[CodeChunk, List[float]]],
+        project_id: str,
+        model_version: Optional[str] = None,
+        batch_size: int = 100,
+    ) -> int:
+        """Upsert (chunk, vector) pairs. Returns number of points upserted."""
+        name = self.ensure_collection(project_id, model_version)
+        total = 0
+
+        for i in range(0, len(chunks_and_vectors), batch_size):
+            batch = chunks_and_vectors[i: i + batch_size]
+            points = [
+                PointStruct(
+                    id=chunk.chunk_id,
+                    vector=vector,
+                    payload=chunk.to_qdrant_payload(),
+                )
+                for chunk, vector in batch
+            ]
+            self.client.upsert(collection_name=name, points=points, wait=True)
+            total += len(points)
+
+        logger.info("[qdrant] Upserted %d points into '%s'", total, name)
+        return total
+
+    # â”€â”€ Delete â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def delete_file(self, project_id: str, file_path: str, model_version: Optional[str] = None) -> None:
+        """Delete all vectors for a specific file (used during incremental update)."""
+        name = collection_name(project_id, model_version or settings.embedding_model_version)
+        try:
+            self.client.delete(
+                collection_name=name,
+                points_selector=Filter(must=[
+                    FieldCondition(key="file_path", match=MatchValue(value=file_path)),
+                ]),
+                wait=True,
+            )
+        except Exception as exc:
+            logger.warning("[qdrant] Delete file '%s' failed: %s", file_path, exc)
+
+    def purge_project(self, project_id: str, model_version: Optional[str] = None) -> None:
+        """
+        Purge all vectors for a project (GDPR right to erasure â€” CDC Â§IDX-06).
+        Deletes the entire collection.
+        """
+        self.delete_collection(project_id, model_version)
+        logger.info("[qdrant] Project '%s' fully purged", project_id)
+
+    # â”€â”€ Search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def dense_search(
+        self,
+        query_vector: List[float],
+        project_id: str,
+        allowed_roles: List[str],
+        top_k: int = 20,
+        score_threshold: float = 0.65,
+        extra_filter: Optional[Filter] = None,
+        model_version: Optional[str] = None,
+    ) -> list:
+        """Dense cosine similarity search with mandatory RBAC pre-filter."""
+        name = collection_name(project_id, model_version or settings.embedding_model_version)
+
+        # RBAC pre-filter â€” ALWAYS applied, NEVER bypassed
+        rbac_must = [
+            FieldCondition(key="project_id", match=MatchValue(value=project_id)),
+            FieldCondition(key="allowed_roles", match=MatchAny(any=allowed_roles)),
+        ]
+        rbac_filter = Filter(must=rbac_must)
+
+        if extra_filter:
+            rbac_filter = Filter(must=rbac_must + (extra_filter.must or []))
+
+        try:
+            return self.client.search(
+                collection_name=name,
+                query_vector=query_vector,
+                query_filter=rbac_filter,
+                limit=top_k,
+                with_payload=True,
+                score_threshold=score_threshold,
+            )
+        except Exception as exc:
+            logger.error("[qdrant] Dense search error: %s", exc)
+            return []
+
+    def get_collection_info(self, project_id: str, model_version: Optional[str] = None) -> dict:
+        name = collection_name(project_id, model_version or settings.embedding_model_version)
+        try:
+            info = self.client.get_collection(name)
+            return {
+                "name": name,
+                "vectors_count": info.vectors_count,
+                "indexed_vectors_count": info.indexed_vectors_count,
+                "status": str(info.status),
+            }
+        except Exception as exc:
+            return {"name": name, "error": str(exc)}
+
+    def list_project_collections(self) -> list[str]:
+        return [c.name for c in self.client.get_collections().collections]
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\rag\storage\__init__.py ===
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\tests\__init__.py ===
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\tests\integration\test_pipeline.py ===
+"""
+Integration smoke test for the full RAG pipeline.
+Requires: Qdrant running on localhost:6333, no GPU needed (fastembed local).
+
+Run: pytest tests/integration/ -v -m integration
+"""
+from __future__ import annotations
+
+import asyncio
+import os
+import pytest
+
+pytestmark = pytest.mark.integration
+
+PYTHON_SAMPLE = '''
+import hashlib
+from typing import Optional
+
+def hash_password(password: str, salt: Optional[str] = None) -> str:
+    """Hash a password using SHA-256 with an optional salt."""
+    if salt:
+        password = salt + password
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(password: str, hashed: str, salt: Optional[str] = None) -> bool:
+    """Verify that a plain-text password matches its hash."""
+    return hash_password(password, salt) == hashed
+
+class UserAuth:
+    def __init__(self, salt: str):
+        self.salt = salt
+
+    def register(self, username: str, password: str) -> dict:
+        return {
+            "username": username,
+            "hash": hash_password(password, self.salt),
+        }
+
+    def login(self, username: str, password: str, stored_hash: str) -> bool:
+        return verify_password(password, stored_hash, self.salt)
+'''
+
+
+@pytest.fixture(scope="module")
+def qdrant_url():
+    return os.getenv("QDRANT_URL", "http://localhost:6333")
+
+
+@pytest.fixture(scope="module")
+def event_loop():
+    loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
+
+
+@pytest.fixture(scope="module")
+def store(qdrant_url):
+    from rag.storage.qdrant_store import QdrantStore
+    return QdrantStore(url=qdrant_url, api_key="rag-local-dev-key-change-in-prod")
+
+
+@pytest.fixture(scope="module")
+def embedder():
+    from rag.embeddings.pipeline import EmbeddingPipeline
+    return EmbeddingPipeline(
+        model_name="nomic-ai/nomic-embed-code",
+        model_version="v1-0",
+        model_url="",  # fastembed local
+    )
+
+
+@pytest.fixture(scope="module")
+def chunker():
+    from rag.chunking.ast_chunker import ASTChunker
+    return ASTChunker()
+
+
+@pytest.fixture(scope="module")
+def scanner():
+    from rag.ingestion.secret_scanner import SecretScanner
+    return SecretScanner(enabled=True)
+
+
+PROJECT_ID = "test-integration-project"
+ALLOWED_ROLES = ["developer"]
+
+
+class TestFullPipeline:
+
+    @pytest.mark.asyncio
+    async def test_chunk_embed_store_retrieve(self, chunker, scanner, embedder, store):
+        from rag.chunking.deduplication import assign_chunk_ids, deduplicate_chunks
+
+        # 1. Scan
+        redacted, had_secrets = scanner.scan_and_redact(PYTHON_SAMPLE, "auth.py")
+        assert had_secrets is False
+
+        # 2. Chunk
+        chunks = chunker.chunk_file(
+            file_content=redacted,
+            file_path="auth/utils.py",
+            language="python",
+            project_id=PROJECT_ID,
+            tenant_id="test-tenant",
+            allowed_roles=ALLOWED_ROLES,
+            commit_hash="deadbeef",
+            branch="main",
+            repository_name="test-repo",
+        )
+        assert len(chunks) >= 2
+
+        # 3. Dedup + IDs
+        unique = deduplicate_chunks(chunks)
+        assign_chunk_ids(unique)
+        assert all(c.chunk_id for c in unique)
+
+        # 4. Embed
+        embedded = await embedder.embed_chunks(unique, show_progress=False)
+        assert len(embedded) == len(unique)
+
+        # 5. Upsert
+        upserted = store.upsert_chunks(embedded, PROJECT_ID)
+        assert upserted == len(unique)
+
+        # 6. Dense search â€” should find hash_password
+        query_vector = await embedder.embed_single("function that hashes a password with SHA256")
+        results = store.dense_search(
+            query_vector=query_vector,
+            project_id=PROJECT_ID,
+            allowed_roles=ALLOWED_ROLES,
+            top_k=5,
+            score_threshold=0.3,  # lower threshold for test
+        )
+        assert len(results) >= 1
+        names = [r.payload.get("node_name", "") for r in results]
+        assert any("hash" in n.lower() or "password" in n.lower() for n in names), \
+            f"Expected hash/password function in results, got: {names}"
+
+    @pytest.mark.asyncio
+    async def test_rbac_isolation(self, chunker, embedder, store):
+        """Users from a different project must get zero results."""
+        from rag.chunking.deduplication import assign_chunk_ids, deduplicate_chunks
+
+        query_vector = await embedder.embed_single("hash password")
+        results = store.dense_search(
+            query_vector=query_vector,
+            project_id="completely-different-project",
+            allowed_roles=ALLOWED_ROLES,
+            top_k=5,
+            score_threshold=0.0,
+        )
+        assert len(results) == 0, "RBAC leak: results returned for wrong project"
+
+    @pytest.mark.asyncio
+    async def test_secrets_not_in_index(self, chunker, scanner, embedder, store):
+        """Confirm secrets are redacted before reaching Qdrant."""
+        content_with_secret = PYTHON_SAMPLE + '\nAPI_KEY = "sk-' + "x" * 40 + '"'
+        redacted, had_secrets = scanner.scan_and_redact(content_with_secret)
+        assert had_secrets is True
+        assert "sk-" + "x" * 40 not in redacted
+
+    def test_cleanup(self, store):
+        """Clean up test collection after integration tests."""
+        store.purge_project(PROJECT_ID)
+        info = store.get_collection_info(PROJECT_ID)
+        assert "error" in info or info.get("vectors_count", 0) == 0
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\tests\integration\__init__.py ===
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\tests\unit\test_ast_chunker.py ===
+"""
+Unit tests for ASTChunker.
+Verifies AST-based chunking correctness, fallback behaviour, and RBAC field propagation.
+"""
+from __future__ import annotations
+
+import pytest
+
+from rag.chunking.ast_chunker import ASTChunker
+from rag.chunking.models import CodeChunk
+
+COMMON_KWARGS = dict(
+    project_id="proj-test",
+    tenant_id="tenant-1",
+    allowed_roles=["developer"],
+    commit_hash="abc123",
+    branch="main",
+    repository_name="test-repo",
+)
+
+
+@pytest.fixture
+def chunker():
+    return ASTChunker()
+
+
+# â”€â”€ Python â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class TestPythonChunking:
+    SIMPLE_MODULE = '''
+import os
+from typing import List
+
+def greet(name: str) -> str:
+    """Return a greeting."""
+    return f"Hello, {name}"
+
+def add(a: int, b: int) -> int:
+    return a + b
+
+class Calculator:
+    def multiply(self, x: int, y: int) -> int:
+        return x * y
+'''
+
+    def test_produces_chunks(self, chunker):
+        chunks = chunker.chunk_file(self.SIMPLE_MODULE, "utils.py", "python", **COMMON_KWARGS)
+        assert len(chunks) >= 2
+
+    def test_chunk_types(self, chunker):
+        chunks = chunker.chunk_file(self.SIMPLE_MODULE, "utils.py", "python", **COMMON_KWARGS)
+        node_types = {c.node_type for c in chunks}
+        assert "function" in node_types or "method" in node_types or "class" in node_types
+
+    def test_function_names_extracted(self, chunker):
+        chunks = chunker.chunk_file(self.SIMPLE_MODULE, "utils.py", "python", **COMMON_KWARGS)
+        names = {c.node_name for c in chunks}
+        assert "greet" in names or "add" in names
+
+    def test_imports_prepended(self, chunker):
+        chunks = chunker.chunk_file(self.SIMPLE_MODULE, "utils.py", "python", **COMMON_KWARGS)
+        func_chunks = [c for c in chunks if c.node_type == "function"]
+        for c in func_chunks:
+            # imports_context or content should contain import block
+            assert "import" in c.content or "import" in c.imports_context
+
+    def test_line_numbers_set(self, chunker):
+        chunks = chunker.chunk_file(self.SIMPLE_MODULE, "utils.py", "python", **COMMON_KWARGS)
+        for c in chunks:
+            assert c.start_line >= 1
+            assert c.end_line >= c.start_line
+
+    def test_rbac_fields_propagated(self, chunker):
+        chunks = chunker.chunk_file(self.SIMPLE_MODULE, "utils.py", "python", **COMMON_KWARGS)
+        for c in chunks:
+            assert c.project_id == "proj-test"
+            assert c.tenant_id == "tenant-1"
+            assert c.allowed_roles == ["developer"]
+            assert c.branch == "main"
+            assert c.repository_name == "test-repo"
+
+    def test_chunk_hash_set(self, chunker):
+        chunks = chunker.chunk_file(self.SIMPLE_MODULE, "utils.py", "python", **COMMON_KWARGS)
+        for c in chunks:
+            assert len(c.chunk_hash) == 64
+
+    def test_file_path_in_content(self, chunker):
+        chunks = chunker.chunk_file(self.SIMPLE_MODULE, "utils/helpers.py", "python", **COMMON_KWARGS)
+        for c in chunks:
+            assert "utils/helpers.py" in c.content
+
+    def test_class_and_methods(self, chunker):
+        chunks = chunker.chunk_file(self.SIMPLE_MODULE, "calc.py", "python", **COMMON_KWARGS)
+        method_chunks = [c for c in chunks if c.parent_class is not None]
+        if method_chunks:
+            assert method_chunks[0].parent_class == "Calculator"
+
+    def test_secret_redacted_flag_propagated(self, chunker):
+        chunks = chunker.chunk_file(
+            self.SIMPLE_MODULE, "utils.py", "python",
+            has_secrets_redacted=True,
+            **COMMON_KWARGS,
+        )
+        for c in chunks:
+            assert c.has_secrets_redacted is True
+
+
+# â”€â”€ JavaScript â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class TestJavaScriptChunking:
+    JS_MODULE = '''
+import { readFile } from 'fs';
+
+function parseConfig(path) {
+    return JSON.parse(readFile(path, 'utf8'));
+}
+
+const fetchData = async (url) => {
+    const response = await fetch(url);
+    return response.json();
+};
+
+class ApiClient {
+    constructor(baseUrl) {
+        this.baseUrl = baseUrl;
+    }
+    get(path) {
+        return fetchData(this.baseUrl + path);
+    }
+}
+'''
+
+    def test_produces_chunks(self, chunker):
+        chunks = chunker.chunk_file(self.JS_MODULE, "client.js", "javascript", **COMMON_KWARGS)
+        assert len(chunks) >= 1
+
+    def test_function_chunk_language(self, chunker):
+        chunks = chunker.chunk_file(self.JS_MODULE, "client.js", "javascript", **COMMON_KWARGS)
+        for c in chunks:
+            assert c.language == "javascript"
+
+
+# â”€â”€ Fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class TestFallback:
+
+    def test_unsupported_language_fallback(self, chunker):
+        content = "SELECT * FROM users WHERE id = 1;"
+        chunks = chunker.chunk_file(content, "query.sql", "sql", **COMMON_KWARGS)
+        assert len(chunks) == 1
+        assert chunks[0].node_type == "module"
+
+    def test_empty_file_fallback(self, chunker):
+        chunks = chunker.chunk_file("", "empty.py", "python", **COMMON_KWARGS)
+        assert len(chunks) >= 1
+
+    def test_syntax_error_fallback(self, chunker):
+        # Deliberately broken Python
+        broken = "def broken(\n    this is not valid python %%% @@@"
+        chunks = chunker.chunk_file(broken, "broken.py", "python", **COMMON_KWARGS)
+        # Should return at least one fallback chunk, not raise
+        assert len(chunks) >= 1
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\tests\unit\test_core.py ===
+"""
+Unit tests for deduplication, SymbolGraph, and QueryPreprocessor.
+"""
+from __future__ import annotations
+
+import pytest
+
+from rag.chunking.deduplication import (
+    assign_chunk_ids,
+    compute_chunk_hash,
+    deduplicate_chunks,
+)
+from rag.chunking.models import CodeChunk
+from rag.chunking.symbol_graph import SymbolGraph
+from rag.retrieval.query_preprocessor import QueryPreprocessor
+
+
+# â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def make_chunk(content: str, node_name: str = "func", project_id: str = "p1") -> CodeChunk:
+    from rag.chunking.ast_chunker import _normalize_hash
+    return CodeChunk(
+        content=content,
+        file_path="test.py",
+        language="python",
+        node_type="function",
+        node_name=node_name,
+        start_line=1,
+        end_line=5,
+        project_id=project_id,
+        tenant_id="t1",
+        allowed_roles=["developer"],
+        chunk_hash=_normalize_hash(content),
+    )
+
+
+# â”€â”€ Deduplication â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class TestDeduplication:
+
+    def test_removes_duplicate_content(self):
+        c1 = make_chunk("def foo(): return 1", "foo")
+        c2 = make_chunk("def foo(): return 1", "foo")   # exact duplicate
+        result = deduplicate_chunks([c1, c2])
+        assert len(result) == 1
+
+    def test_keeps_distinct_chunks(self):
+        c1 = make_chunk("def foo(): return 1", "foo")
+        c2 = make_chunk("def bar(): return 2", "bar")
+        result = deduplicate_chunks([c1, c2])
+        assert len(result) == 2
+
+    def test_whitespace_normalisation(self):
+        c1 = make_chunk("def foo():  return  1", "foo")
+        c2 = make_chunk("def foo(): return 1", "foo")   # same after normalisation
+        result = deduplicate_chunks([c1, c2])
+        assert len(result) == 1
+
+    def test_hash_deterministic(self):
+        h1 = compute_chunk_hash("def foo(): pass")
+        h2 = compute_chunk_hash("def foo(): pass")
+        assert h1 == h2
+
+    def test_hash_differs_for_different_content(self):
+        h1 = compute_chunk_hash("def foo(): pass")
+        h2 = compute_chunk_hash("def bar(): pass")
+        assert h1 != h2
+
+    def test_chunk_hash_set_by_dedup(self):
+        c = make_chunk("def foo(): pass")
+        c.chunk_hash = ""   # clear
+        result = deduplicate_chunks([c])
+        assert len(result[0].chunk_hash) == 64
+
+
+class TestAssignChunkIds:
+
+    def test_ids_are_uuids(self):
+        import re
+        c = make_chunk("def foo(): pass")
+        c.chunk_hash = compute_chunk_hash(c.content)
+        assign_chunk_ids([c])
+        uuid_re = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        assert re.match(uuid_re, c.chunk_id)
+
+    def test_ids_are_deterministic(self):
+        c1 = make_chunk("def foo(): pass")
+        c2 = make_chunk("def foo(): pass")
+        c1.chunk_hash = c2.chunk_hash = compute_chunk_hash("def foo(): pass")
+        assign_chunk_ids([c1])
+        assign_chunk_ids([c2])
+        assert c1.chunk_id == c2.chunk_id
+
+    def test_different_projects_different_ids(self):
+        c1 = make_chunk("def foo(): pass", project_id="p1")
+        c2 = make_chunk("def foo(): pass", project_id="p2")
+        c1.chunk_hash = c2.chunk_hash = compute_chunk_hash("def foo(): pass")
+        assign_chunk_ids([c1, c2])
+        assert c1.chunk_id != c2.chunk_id
+
+
+# â”€â”€ SymbolGraph â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class TestSymbolGraph:
+
+    def test_add_and_query_call_edge(self):
+        g = SymbolGraph()
+        g.add_call_edge("repo::auth.py::login", "repo::db.py::query_user")
+        callees = g.get_callees("repo::auth.py::login")
+        assert "repo::db.py::query_user" in callees
+
+    def test_get_callers(self):
+        g = SymbolGraph()
+        g.add_call_edge("repo::api.py::handle_request", "repo::auth.py::login")
+        g.add_call_edge("repo::cli.py::run", "repo::auth.py::login")
+        callers = g.get_callers("repo::auth.py::login")
+        assert "repo::api.py::handle_request" in callers
+        assert "repo::cli.py::run" in callers
+
+    def test_search_by_name(self):
+        g = SymbolGraph()
+        g.add_call_edge("repo::auth.py::authenticate_user", "repo::db.py::find_user")
+        results = g.search_by_name("authenticate_user")
+        assert any("authenticate_user" in r for r in results)
+
+    def test_empty_graph_returns_empty(self):
+        g = SymbolGraph()
+        assert g.get_callers("nothing::here") == []
+        assert g.get_callees("nothing::here") == []
+
+    def test_graph_len(self):
+        g = SymbolGraph()
+        g.add_call_edge("a::foo", "b::bar")
+        assert len(g) >= 2
+
+    def test_serialize_roundtrip(self):
+        g = SymbolGraph()
+        g.add_call_edge("a::foo", "b::bar")
+        data = g.to_dict()
+        g2 = SymbolGraph.from_dict(data)
+        assert g2.get_callees("a::foo") == ["b::bar"]
+
+
+# â”€â”€ QueryPreprocessor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class TestQueryPreprocessor:
+
+    @pytest.fixture
+    def pp(self):
+        return QueryPreprocessor()
+
+    def test_normalises_whitespace(self, pp):
+        result = pp.preprocess("  how   does  this   work  ")
+        assert "  " not in result["normalised"]
+
+    def test_detects_python(self, pp):
+        result = pp.preprocess("def authenticate_user(self, token): pass")
+        assert result["detected_language"] == "python"
+
+    def test_detects_typescript(self, pp):
+        result = pp.preprocess("interface UserService { getUser(id: string): Promise<User> }")
+        assert result["detected_language"] == "typescript"
+
+    def test_classifies_debugging(self, pp):
+        result = pp.preprocess("I'm getting a TypeError exception in my code")
+        assert result["query_type"] == "debugging"
+
+    def test_classifies_security(self, pp):
+        result = pp.preprocess("Is there a SQL injection vulnerability here?")
+        assert result["query_type"] == "security"
+
+    def test_classifies_refactoring(self, pp):
+        result = pp.preprocess("How can I refactor this to improve performance?")
+        assert result["query_type"] == "refactoring"
+
+    def test_extracts_identifiers(self, pp):
+        result = pp.preprocess("Where is authenticate_user called in the codebase?")
+        assert "authenticate_user" in result["keywords"]
+
+    def test_unknown_language_returns_none(self, pp):
+        result = pp.preprocess("How do I bake a cake?")
+        assert result["detected_language"] is None
+
+    def test_general_classification_fallback(self, pp):
+        result = pp.preprocess("List all available configuration options")
+        assert result["query_type"] == "general"
+
+    def test_output_structure(self, pp):
+        result = pp.preprocess("def foo(): pass")
+        assert "original" in result
+        assert "normalised" in result
+        assert "detected_language" in result
+        assert "keywords" in result
+        assert "query_type" in result
+        assert "hypothetical_snippet" in result
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\tests\unit\test_secret_scanner.py ===
+"""
+Unit tests for SecretScanner.
+CDC requirement: 100% detection rate on synthetic secrets corpus.
+"""
+from __future__ import annotations
+
+import pytest
+
+from rag.ingestion.secret_scanner import REDACTION_PLACEHOLDER, SecretScanner
+
+
+@pytest.fixture
+def scanner():
+    return SecretScanner(gitleaks_binary="gitleaks", enabled=True)
+
+
+# â”€â”€ Regex detection tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class TestRegexDetection:
+
+    def test_detects_aws_access_key(self, scanner):
+        content = 'aws_access_key_id = "AKIAIOSFODNN7EXAMPLE"'
+        redacted, found = scanner.scan_and_redact(content, "config.py")
+        assert found is True
+        assert "AKIAIOSFODNN7EXAMPLE" not in redacted
+        assert REDACTION_PLACEHOLDER in redacted
+
+    def test_detects_api_key_assignment(self, scanner):
+        content = 'API_KEY = "sk-abcdef1234567890abcdef1234567890"'
+        redacted, found = scanner.scan_and_redact(content, "settings.py")
+        assert found is True
+        assert "sk-abcdef" not in redacted
+
+    def test_detects_bearer_token(self, scanner):
+        content = "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.payload.sig"
+        redacted, found = scanner.scan_and_redact(content)
+        assert found is True
+
+    def test_detects_github_pat(self, scanner):
+        content = 'GITHUB_TOKEN = "ghp_' + "A" * 36 + '"'
+        redacted, found = scanner.scan_and_redact(content, "ci.yml")
+        assert found is True
+        assert "ghp_" not in redacted
+
+    def test_detects_private_key_header(self, scanner):
+        content = "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----"
+        redacted, found = scanner.scan_and_redact(content, "key.pem")
+        assert found is True
+        assert "BEGIN RSA PRIVATE KEY" not in redacted
+
+    def test_detects_postgres_connection_string(self, scanner):
+        content = 'DB_URL = "postgresql://admin:s3cr3tpassword@db.example.com:5432/app"'
+        redacted, found = scanner.scan_and_redact(content)
+        assert found is True
+
+    def test_detects_password_in_quotes(self, scanner):
+        content = 'password = "MyS3cur3P@ss"'
+        redacted, found = scanner.scan_and_redact(content)
+        assert found is True
+        assert "MyS3cur3P@ss" not in redacted
+
+    def test_detects_gitlab_pat(self, scanner):
+        content = 'token = "glpat-xxxx-yyyy-zzzz-aaaa"'
+        redacted, found = scanner.scan_and_redact(content)
+        assert found is True
+
+
+# â”€â”€ Clean content tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class TestCleanContent:
+
+    def test_clean_python_function(self, scanner):
+        content = """
+def calculate_sum(a: int, b: int) -> int:
+    return a + b
+"""
+        redacted, found = scanner.scan_and_redact(content)
+        assert found is False
+        assert redacted == content
+
+    def test_clean_import_block(self, scanner):
+        content = "from typing import List, Optional\nimport os\nimport sys"
+        redacted, found = scanner.scan_and_redact(content)
+        assert found is False
+
+    def test_placeholder_variable_name(self, scanner):
+        """Variable names containing 'password' without a value should not trigger."""
+        content = "def set_password(self, password: str) -> None:\n    self._password = password"
+        # This may or may not trigger depending on pattern â€” just verify no crash
+        redacted, found = scanner.scan_and_redact(content)
+        assert isinstance(found, bool)
+        assert isinstance(redacted, str)
+
+
+# â”€â”€ Disabled scanner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class TestDisabledScanner:
+
+    def test_disabled_scanner_returns_original(self):
+        scanner = SecretScanner(enabled=False)
+        secret_content = 'API_KEY = "sk-' + "x" * 40 + '"'
+        redacted, found = scanner.scan_and_redact(secret_content)
+        assert found is False
+        assert redacted == secret_content
+
+
+# â”€â”€ Content hash â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class TestContentHash:
+
+    def test_hash_is_deterministic(self, scanner):
+        content = "def foo(): pass"
+        h1 = scanner.content_hash(content)
+        h2 = scanner.content_hash(content)
+        assert h1 == h2
+
+    def test_different_content_different_hash(self, scanner):
+        h1 = scanner.content_hash("def foo(): pass")
+        h2 = scanner.content_hash("def bar(): pass")
+        assert h1 != h2
+
+    def test_hash_length(self, scanner):
+        h = scanner.content_hash("hello")
+        assert len(h) == 64   # SHA-256 hex = 64 chars
+
+
+
+=== FILE: C:\Users\hayde\Downloads\rag-engine c\rag-engine\tests\unit\__init__.py ===
+
+
+

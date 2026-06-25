@@ -40,10 +40,21 @@ def call_router(prompt: str) -> ServiceResult:
 
 
 # ── RAG (stub - teammate fills this in) ───────────────────────────────────────
+def rag_available() -> bool:
+    """Honest check: is the RAG service actually built? Used by /services/status."""
+    try:
+        from rag.engine import search  # type: ignore
+        return callable(search)
+    except Exception:
+        return False
+
+
 def call_rag(prompt: str, repo_name: str | None = None) -> ServiceResult:
     """
     Retrieve relevant code chunks for the prompt.
-    STUB: returns empty context until the RAG team wires up rag/.
+    If RAG isn't built yet, returns success=True with empty chunks so the
+    /agent flow keeps working (just without code context). For an honest
+    "is it built" answer, use rag_available() instead.
     """
     try:
         # When ready, the RAG team exposes: from rag.engine import search
@@ -60,20 +71,59 @@ def call_rag(prompt: str, repo_name: str | None = None) -> ServiceResult:
         return ServiceResult(service="rag", data={"chunks": []}, success=False, error=str(e))
 
 
-# ── SANDBOX (stub) ────────────────────────────────────────────────────────────
-def call_sandbox(code: str, timeout: int = 30) -> ServiceResult:
-    """Run code safely in isolation. STUB until sandbox/ is built."""
+# ── SANDBOX ───────────────────────────────────────────────────────────────────
+def call_sandbox(tool: str, command: str, workspace_path: str = "./workspace") -> ServiceResult:
+    """
+    Run an allow-listed command safely inside the teammate's Docker sandbox.
+
+    The sandbox (sandbox/sandbox_runner.py) exposes executer_dans_sandbox(outil, commande),
+    which runs the command in a locked-down Docker container. It REQUIRES Docker to be
+    installed and running. On machines without Docker (like this gateway's dev machine),
+    we catch that and return a clean 'Docker required' message instead of crashing.
+
+    Args:
+        tool:    one of "python", "node", "security"
+        command: the command to run (must be on the sandbox's allowlist)
+        workspace_path: folder mounted into the container (read-only)
+    """
     try:
-        from sandbox.runner import run_code     # type: ignore
-        output = run_code(code, timeout=timeout)
-        return ServiceResult(service="sandbox", data=output, success=True)
+        from sandbox.sandbox_runner import executer_dans_sandbox  # type: ignore
+
+        result = executer_dans_sandbox(tool, command, workspace_path)
+
+        # Translate the sandbox's French keys into the gateway's standard shape
+        normalized = {
+            "run_id":      result.get("run_id"),
+            "success":     result.get("succes", False),
+            "stdout":      result.get("stdout", ""),
+            "stderr":      result.get("stderr", ""),
+            "return_code": result.get("code_retour"),
+        }
+        return ServiceResult(
+            service="sandbox",
+            data=normalized,
+            success=normalized["success"],
+            error=None if normalized["success"] else normalized["stderr"],
+        )
+
     except ImportError:
         return ServiceResult(
             service="sandbox", data=None, success=False,
-            error="Sandbox not available yet"
+            error="Sandbox module not found (sandbox/sandbox_runner.py)"
+        )
+    except FileNotFoundError:
+        # This is what happens when 'docker' isn't installed: subprocess can't find it.
+        return ServiceResult(
+            service="sandbox", data=None, success=False,
+            error="Sandbox requires Docker, which is not installed on this machine. "
+                  "The sandbox will run on any machine that has Docker."
         )
     except Exception as e:
-        return ServiceResult(service="sandbox", data=None, success=False, error=str(e))
+        # Catch-all, including Docker-daemon-not-running errors
+        msg = str(e)
+        if "docker" in msg.lower():
+            msg = "Sandbox requires Docker to be installed and running. " + msg
+        return ServiceResult(service="sandbox", data=None, success=False, error=msg)
 
 
 # ── SECURITY (stub) ───────────────────────────────────────────────────────────

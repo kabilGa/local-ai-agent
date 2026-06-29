@@ -280,55 +280,76 @@ class OrchestratorResponse(BaseModel):
 
 @app.post("/v1/agent/chat", response_model=OrchestratorResponse)
 def agent_chat(request: OrchestratorRequest, identity: str = Depends(require_auth)):
-    """Orchestrator-facing endpoint. Accepts the orchestrator's JSON shape."""
+    """
+    Front-door endpoint. In the team architecture, this forwards the request to
+    the Orchestrator (Mehdi / Étudiant 3), which runs the multi-step agent loop
+    (RAG -> Model Gateway -> Sandbox) and returns {response, steps}.
+
+    If the orchestrator is unreachable (e.g. not running, or its downstream
+    services are not up yet), the gateway gracefully falls back to answering
+    the request itself with direct model routing, so the system still responds.
+    """
     message = (request.message or "").strip()
     if not message:
         raise HTTPException(status_code=400, detail="message cannot be empty")
     if len(message) > 10000:
         raise HTTPException(status_code=400, detail="message too long (max 10000 characters)")
 
-    # Use user_id as the memory session so each user keeps their own history.
     session_id = request.user_id or "orchestrator"
     audit("orchestrator_request", session=session_id, project=request.project_id,
           preview=message[:80])
     log.info(f"[orchestrator:{session_id}] {message[:60]}...")
 
-    # Same flow as /agent: RAG context -> memory -> route to model
-    rag_result = call_rag(message, request.project_id)
-    context_chunks = []
-    if rag_result.success and rag_result.data:
-        context_chunks = rag_result.data.get("chunks", [])
+    # ── 1. Try to forward to the real orchestrator ────────────────────────────
+    import httpx
+    orchestrator_url = os.environ.get("ORCHESTRATOR_URL", "http://localhost:8001/v1/agent/chat")
+    try:
+        with httpx.Client(timeout=60.0) as client:
+            resp = client.post(orchestrator_url, json={
+                "message": message,
+                "project_id": request.project_id or "default",
+                "user_id": session_id,
+            })
+        if resp.status_code == 200:
+            data = resp.json()
+            audit("orchestrator_forwarded", session=session_id, status="ok")
+            return OrchestratorResponse(
+                response=data.get("response", ""),
+                steps=data.get("steps", []),
+            )
+        else:
+            log.warning(f"Orchestrator returned {resp.status_code}; falling back to direct routing.")
+            audit("orchestrator_http_error", status=resp.status_code)
+    except Exception as e:
+        # Orchestrator not reachable - fall back to direct routing below.
+        log.warning(f"Orchestrator unreachable ({e}); falling back to direct routing.")
+        audit("orchestrator_unreachable", reason=str(e)[:120])
 
+    # ── 2. Fallback: answer directly with model routing ───────────────────────
     prompt_with_memory = memory.build_prompt_with_history(session_id, message)
     router_result = call_router(prompt_with_memory)
 
     if not router_result.success:
         log.error(f"Router failed: {router_result.error}")
         audit("orchestrator_failed", reason=router_result.error)
-        # Return the orchestrator's shape even on error
         return OrchestratorResponse(
             response=router_result.error or "The model router is unavailable.",
-            steps=[],
+            steps=[{"step_name": "fallback", "status": "FAILED",
+                    "summary": router_result.error or "router unavailable"}],
         )
 
     data = router_result.data
     answer = data.get("answer", "")
-
     memory.add_message(session_id, "user", message)
     memory.add_message(session_id, "assistant", answer)
 
-    # "steps" describes what the gateway did, in the orchestrator's expected
-    # list form. The gateway performs a single routing step (it is not itself
-    # the multi-step agent loop), so we report that one step transparently.
     steps = [{
-        "step": "route_and_generate",
-        "model_used": data.get("model_used"),
-        "tier": data.get("tier"),
-        "rag_context_used": len(context_chunks) > 0,
-        "latency_s": data.get("latency_s"),
+        "step_name": "gateway_direct_fallback",
+        "status": "SUCCESS",
+        "summary": f"Answered directly via {data.get('tier')} model "
+                   f"({data.get('model_used')}); orchestrator was not reachable.",
     }]
-
-    audit("orchestrator_answered", session=session_id,
+    audit("orchestrator_answered_fallback", session=session_id,
           model=data.get("model_used"), tier=data.get("tier"))
 
     return OrchestratorResponse(response=answer, steps=steps)

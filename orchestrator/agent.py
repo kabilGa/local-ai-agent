@@ -50,7 +50,7 @@ async def generate_code_patch(state: AgentState):
         )
         user_prompt = f"Contexte du code source :\n{state['context']}\n\nDemande utilisateur : {state['query']}"
         
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=300.0) as client:
             payload = {
                 "model": "codellama", # Ou le modèle choisi par l'étudiant 5
                 "messages": [
@@ -83,7 +83,7 @@ async def verify_patch_in_sandbox(state: AgentState):
         return {"verification_result": "Non testé", "steps_track": steps}
         
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=120.0) as client:
             # On envoie le code généré à la sandbox pour validation (tests syntaxiques ou unitaires)
             payload = {"code": state["code_patch"], "language": "python"}
             response = await client.post(SANDBOX_URL, json=payload)

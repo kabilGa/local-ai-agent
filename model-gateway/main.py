@@ -109,3 +109,89 @@ async def list_models():
         response = await client.get(f"{OLLAMA_URL}/api/tags")
         data = response.json()
     return data.get("models", [])
+# ============================================================================
+# OpenAI-compatible chat completions endpoint  (added by Adam for integration)
+# ----------------------------------------------------------------------------
+# The orchestrator (Mehdi) calls POST /v1/chat/completions and reads the answer
+# from choices[0].message.content (standard OpenAI shape, non-streaming).
+# Mhamd's existing /v1/chat streams tokens, which the orchestrator can't parse,
+# so this adds the non-streaming OpenAI endpoint the orchestrator needs.
+# Mhamd's original endpoints are unchanged.
+#
+# --- FIX (Adam) ---
+# The orchestrator hardcodes model "codellama", which is NOT an exact tag that
+# Ollama has (we have qwen2.5-coder:* and codellama:7b-instruct-q4_K_M). An
+# unknown model made Ollama return an error, this endpoint returned empty
+# content, and the empty patch made the sandbox reject the request with 400.
+# A Model Gateway should abstract models, so we map unknown/missing names to an
+# available default, and we surface Ollama errors instead of returning "".
+# ============================================================================
+
+# Models this gateway actually has (see `ollama list`). First is the default.
+AVAILABLE_MODELS = {
+    "qwen2.5-coder:7b",
+    "qwen2.5-coder:3b",
+    "qwen2.5-coder:1.5b",
+    "deepseek-coder:6.7b-instruct-q4_K_M",
+    "codellama:7b-instruct-q4_K_M",
+    "phi3:mini",
+}
+DEFAULT_MODEL = "qwen2.5-coder:3b"
+
+
+def _resolve_model(requested: str | None) -> str:
+    """Return an available Ollama model. Falls back to DEFAULT_MODEL if the
+    requested name isn't an exact tag we have (e.g. 'codellama' with no tag)."""
+    if requested and requested in AVAILABLE_MODELS:
+        return requested
+    # Try a loose match (e.g. 'codellama' -> 'codellama:7b-instruct-q4_K_M')
+    if requested:
+        for m in AVAILABLE_MODELS:
+            if m.split(":")[0] == requested:
+                return m
+    return DEFAULT_MODEL
+
+
+class ChatCompletionsRequest(BaseModel):
+    messages: List[Message]
+    model: str = DEFAULT_MODEL
+    temperature: float = 0.0
+
+
+@app.post("/v1/chat/completions")
+async def chat_completions(req: ChatCompletionsRequest):
+    """OpenAI-compatible, non-streaming. Returns choices[0].message.content."""
+    model = _resolve_model(req.model)
+
+    async with httpx.AsyncClient(timeout=300.0) as client:
+        response = await client.post(
+            f"{OLLAMA_URL}/api/chat",
+            json={
+                "model": model,
+                "messages": [m.dict() for m in req.messages],
+                "stream": False,  # single complete reply, not a stream
+                "options": {"temperature": req.temperature},
+            },
+        )
+        data = response.json()
+
+    # Surface Ollama errors instead of silently returning empty content.
+    if "error" in data:
+        content = f"[Model Gateway error] Ollama: {data['error']}"
+    else:
+        content = data.get("message", {}).get("content", "")
+        if not content.strip():
+            content = "[Model Gateway error] Empty response from model."
+
+    return {
+        "id": "chatcmpl-local",
+        "object": "chat.completion",
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": content},
+                "finish_reason": "stop",
+            }
+        ],
+    }

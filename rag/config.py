@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # ── Embeddings ────────────────────────────────────────────────────────────
     # If empty → fastembed local; if set → remote TEI HTTP server
     embedding_model_url: str = ""
-    embedding_model_name: str = "nomic-ai/nomic-embed-code"
+    embedding_model_name: str = "jinaai/jina-embeddings-v2-base-code"
     embedding_model_version: str = "v1-0"
     embedding_dim: int = 768
     embedding_batch_size: int = 32

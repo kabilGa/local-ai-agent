@@ -6,14 +6,15 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     ports:
-      - "8000:8000"    # REST API
+      - "8002:8000"    # REST API
       - "9090:9090"    # Prometheus metrics (expose separately in prod)
     environment:
       QDRANT_URL: http://qdrant:6333
       QDRANT_API_KEY: ${QDRANT_API_KEY}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       EMBEDDING_MODEL_URL: ""          # empty = fastembed local (no GPU server)
-      EMBEDDING_MODEL_NAME: nomic-ai/nomic-embed-code
+      EMBEDDING_MODEL_NAME: jinaai/jina-embeddings-v2-base-code
+      HF_HOME: /tmp/hf_cache
       EMBEDDING_MODEL_VERSION: v1-0
       RERANKER_ENABLED: "false"
       GIT_WORKSPACE: /tmp/rag-repos
@@ -51,7 +52,7 @@ services:
       - rag-internal
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/6333'"]
       interval: 15s
       timeout: 5s
       retries: 5

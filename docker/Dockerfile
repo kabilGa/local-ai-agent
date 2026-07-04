@@ -26,7 +26,7 @@ WORKDIR /app
 
 # Runtime system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgit2-1.5 \
+    libgit2-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 

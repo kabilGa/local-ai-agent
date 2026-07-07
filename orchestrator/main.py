@@ -45,14 +45,52 @@ async def process_agent_logic(payload: AgentChatRequest):
     # 2. Lancement de l'orchestration (exécution asynchrone du graphe)
     final_state = await agent_orchestrator.ainvoke(initial_state)
     
-    # 3. Mise en forme de la réponse finale
     final_text = (
-        f"### Résultat de l'analyse pour l'utilisateur {payload.user_id} :\n\n"
-        f"**Proposition de correctif :**\n{final_state['code_patch']}\n\n"
-        f"**Statut de la vérification en Sandbox :** {final_state['verification_result']}"
+        f"{final_state['code_patch']}\n\n"
+        f"**Sandbox verification:** {final_state['verification_result']}"
     )
     
     return AgentChatResponse(
         response=final_text,
         steps=final_state["steps_track"]
     )
+
+
+# ── Streaming endpoint (Adam): emits progress after each graph node via SSE ────
+import json
+from fastapi.responses import StreamingResponse
+
+@app.post("/v1/agent/stream")
+async def process_agent_stream(payload: AgentChatRequest):
+    initial_state = {
+        "query": payload.message,
+        "project_id": payload.project_id,
+        "user_id": payload.user_id,
+        "context": "",
+        "code_patch": "",
+        "verification_result": "",
+        "steps_track": []
+    }
+
+    async def event_gen():
+        last_len = 0
+        final_state = None
+        async for state in agent_orchestrator.astream(initial_state):
+            # astream yields {node_name: state_after_node}
+            for node_name, node_state in state.items():
+                final_state = node_state
+                steps = node_state.get("steps_track", [])
+                # emit any new steps produced by this node
+                while last_len < len(steps):
+                    step = steps[last_len]
+                    last_len += 1
+                    yield f"data: {json.dumps({'type': 'step', 'step': step})}\n\n"
+        # emit final response
+        if final_state is not None:
+            final_text = (
+                f"{final_state.get('code_patch','')}\n\n"
+                f"**Sandbox verification:** {final_state.get('verification_result','')}"
+            )
+            yield f"data: {json.dumps({'type': 'done', 'response': final_text})}\n\n"
+
+    return StreamingResponse(event_gen(), media_type="text/event-stream")

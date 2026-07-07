@@ -4,7 +4,7 @@ from langgraph.graph import StateGraph, END
 from typing import TypedDict, List, Dict, Any
 
 # Récupération des URLs des autres microservices (avec valeurs par défaut pour le local)
-RAG_ENGINE_URL = os.getenv("RAG_ENGINE_URL", "http://localhost:8002/v1/context/retrieve")
+RAG_ENGINE_URL = os.getenv("RAG_ENGINE_URL", "http://localhost:8002/v1/retrieve")
 MODEL_GATEWAY_URL = os.getenv("MODEL_GATEWAY_URL", "http://localhost:8003/v1/chat/completions")
 SANDBOX_URL = os.getenv("SANDBOX_URL", "http://localhost:8004/v1/sandbox/execute")
 
@@ -23,12 +23,12 @@ async def retrieve_code_context(state: AgentState):
     steps = state.get("steps_track", [])
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            payload = {"query": state["query"], "project_id": state["project_id"]}
+            payload = {"query": state["query"], "user_id": state.get("user_id", "orchestrator"), "project_ids": [state["project_id"]], "allowed_roles": ["developer"], "top_k": 5}
             response = await client.post(RAG_ENGINE_URL, json=payload)
             
             if response.status_code == 200:
                 data = response.json()
-                context = data.get("context", "Aucun code pertinent trouvé.")
+                context = data.get("assembled_context", "Aucun code pertinent trouvé.")
                 steps.append({"step_name": "RAG_Engine", "status": "SUCCESS", "summary": "Code source pertinent récupéré avec succès."})
                 return {"context": context, "steps_track": steps}
             else:
@@ -44,9 +44,13 @@ async def generate_code_patch(state: AgentState):
     try:
         # Construction du prompt technique incluant le contexte du RAG
         system_prompt = (
-            "Tu es un agent IA expert en développement logiciel. "
-            "Analyse le code source fourni ci-dessous et propose un correctif (patch) "
-            "sous forme de bloc de code propre pour résoudre la demande de l'utilisateur."
+            "You are an expert software development AI agent. "
+            "Analyze the provided source code and propose a fix (patch) "
+            "as a clean code block to resolve the user's request. "
+            "Always respond in English. "
+            "Write any mathematical expressions using LaTeX: inline math "
+            "between single dollar signs like $x^2$, and display math between "
+            "double dollar signs like $$\\sum_{i=1}^{n} i$$."
         )
         user_prompt = f"Contexte du code source :\n{state['context']}\n\nDemande utilisateur : {state['query']}"
         

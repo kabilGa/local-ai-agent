@@ -20,9 +20,9 @@ class Settings(BaseSettings):
     # ── Embeddings ────────────────────────────────────────────────────────────
     # If empty → fastembed local; if set → remote TEI HTTP server
     embedding_model_url: str = ""
-    embedding_model_name: str = "nomic-ai/nomic-embed-code"
+    embedding_model_name: str = "BAAI/bge-small-en-v1.5"
     embedding_model_version: str = "v1-0"
-    embedding_dim: int = 768
+    embedding_dim: int = 384
     embedding_batch_size: int = 32
     embedding_max_concurrent: int = 4
 
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     # ── Retrieval ─────────────────────────────────────────────────────────────
     default_top_k: int = 5
     reranker_top_k: int = 20
-    score_threshold: float = 0.65
+    score_threshold: float = 0.3
     rrf_k: int = 60
 
     # ── Cache ─────────────────────────────────────────────────────────────────

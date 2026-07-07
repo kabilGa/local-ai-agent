@@ -304,7 +304,7 @@ def agent_chat(request: OrchestratorRequest, identity: str = Depends(require_aut
     import httpx
     orchestrator_url = os.environ.get("ORCHESTRATOR_URL", "http://localhost:8001/v1/agent/chat")
     try:
-        with httpx.Client(timeout=60.0) as client:
+        with httpx.Client(timeout=600.0) as client:
             resp = client.post(orchestrator_url, json={
                 "message": message,
                 "project_id": request.project_id or "default",
@@ -471,3 +471,27 @@ def run(tool: str, command: str, workspace_path: str = "./workspace"):
     if not result.success:
         raise HTTPException(status_code=503, detail=result.error or "Sandbox service unavailable")
     return result.data
+
+
+# ── Streaming forward to orchestrator (Adam): pipes SSE through to the browser ──
+@app.post("/v1/agent/stream")
+async def agent_stream_forward(request: OrchestratorRequest):
+    orch_stream_url = os.environ.get("ORCHESTRATOR_STREAM_URL", "http://localhost:8001/v1/agent/stream")
+
+    async def relay():
+        try:
+            async with httpx.AsyncClient(timeout=600.0) as client:
+                async with client.stream("POST", orch_stream_url, json={
+                    "message": request.message,
+                    "project_id": request.project_id,
+                    "user_id": request.user_id,
+                }) as resp:
+                    async for line in resp.aiter_lines():
+                        if line:
+                            yield line + "\n"
+                    yield "\n"
+        except Exception as e:
+            import json as _json
+            yield f"data: {_json.dumps({'type':'error','error':str(e)[:200]})}\n\n"
+
+    return StreamingResponse(relay(), media_type="text/event-stream")

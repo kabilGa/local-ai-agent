@@ -44,9 +44,13 @@ async def generate_code_patch(state: AgentState):
     try:
         # Construction du prompt technique incluant le contexte du RAG
         system_prompt = (
-            "Tu es un agent IA expert en développement logiciel. "
-            "Analyse le code source fourni ci-dessous et propose un correctif (patch) "
-            "sous forme de bloc de code propre pour résoudre la demande de l'utilisateur."
+            "You are an expert software development AI agent. "
+            "Analyze the provided source code and propose a fix (patch) "
+            "as a clean code block to resolve the user's request. "
+            "Always respond in English. "
+            "Write any mathematical expressions using LaTeX: inline math "
+            "between single dollar signs like $x^2$, and display math between "
+            "double dollar signs like $$\\sum_{i=1}^{n} i$$."
         )
         user_prompt = f"Contexte du code source :\n{state['context']}\n\nDemande utilisateur : {state['query']}"
         

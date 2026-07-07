@@ -130,6 +130,14 @@
   .seed { font-size: 13px; color: #aab6c8; background: var(--panel); border: 1px solid var(--line);
        border-radius: 9px; padding: 9px 13px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
   .seed:hover { border-color: #2d3a4d; color: var(--bone); transform: translateY(-1px); }
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:12px}
+.flow-step{display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);font-size:12px;opacity:0;transform:translateY(4px);transition:opacity .35s,transform .35s}
+.flow-step.show{opacity:1;transform:translateY(0)}
+.flow-step .fdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.flow-step .fname{text-transform:capitalize;color:#cfd8e3}
+.flow-step .fstat{font-size:9px;letter-spacing:.05em;opacity:.6}
+.flow-arrow{color:#3ddc97;font-size:14px;opacity:0;transition:opacity .35s}
+.flow-arrow.show{opacity:.7}
 </style>
 </head>
 <body>
@@ -233,12 +241,26 @@
     aBubble.innerHTML='<div class="thinking"><div class="bars"><span></span><span></span><span></span><span></span></div><span class="label">routing & generating…</span></div>';
     aTurn.appendChild(aBubble); aBubble.scrollIntoView({behavior:'smooth',block:'end'});
     try{
-      const resp=await fetch('/agent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:text, session_id:SESSION_ID})});
+      const resp=await fetch('/v1/agent/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text, project_id:'default', user_id:SESSION_ID})});
       const data=await resp.json();
-      if(data.tier) highlightTier(data.tier);
       if(data.success===false){
         aBubble.innerHTML='<div class="agent-meta"><span class="pill err">error</span></div><div class="content"><p>'+(data.error||'Something went wrong.')+'</p></div>';
-      } else { renderInto(aBubble,data); }
+      } else {
+        let sh="";
+        if(Array.isArray(data.steps)){
+          for(const s of data.steps){
+            const c = s.status==="SUCCESS" ? "#3ddc97" : (s.status==="SKIPPED" ? "#888" : "#ff6b6b");
+            sh += '<div style="display:flex;gap:8px;align-items:center;padding:5px 9px;margin-bottom:4px;border-radius:7px;background:rgba(255,255,255,.03);font-size:12px"><span style="width:8px;height:8px;border-radius:50%;background:'+c+'"></span><span style="flex:1;text-transform:capitalize;color:#cfd8e3">'+(s.step_name||"").replace(/_/g," ")+'</span><span style="font-size:10px;opacity:.6">'+s.status+'</span></div>';
+          }
+        }
+        let txt = (data.response||"No response.");
+        txt = txt.replace(/^#*\s*R\u00e9sultat de l'analyse pour l'utilisateur[^\n]*\n+/i,'');
+        const contentHtml = marked.parse(txt);
+        aBubble.innerHTML = sh + '<div class="content">'+contentHtml+'</div>';
+        const contentEl = aBubble.querySelector('.content');
+        try{ renderMathInElement(contentEl,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}],throwOnError:false}); }catch(e){}
+        contentEl.querySelectorAll('pre code').forEach(b=>{try{hljs.highlightElement(b);}catch(e){}});
+      }
     }catch(e){
       aBubble.innerHTML='<div class="agent-meta"><span class="pill err">offline</span></div><div class="content"><p>Could not reach the gateway. Is it running?</p></div>';
     }finally{ btn.disabled=false; aBubble.scrollIntoView({behavior:'smooth',block:'end'}); }

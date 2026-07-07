@@ -45,7 +45,7 @@ MAX_CODE_SIZE = 200_000  # ~200 KB, anti-abus simple
 #                            -> vient de la variable d'environnement
 #                            HOST_WORKSPACE_PATH définie dans docker-compose.yml
 # --------------------------------------------------------------------------
-CONTAINER_WORKSPACE_ROOT = Path("/shared_workspace")
+CONTAINER_WORKSPACE_ROOT = Path(os.environ.get("CONTAINER_WORKSPACE_PATH", os.environ.get("HOST_WORKSPACE_PATH", "/shared_workspace")))
 HOST_WORKSPACE_ROOT = os.environ.get("HOST_WORKSPACE_PATH", "").rstrip("\\/")
 
 if not HOST_WORKSPACE_ROOT:
@@ -108,10 +108,9 @@ def execute_code(req: CodeExecutionRequest) -> CodeExecutionResponse:
 
     # Sous-dossier dédié à ce run, créé sous le dossier partagé.
     # Vu par CE conteneur :   /shared_workspace/run_<id>
-    # Vu par le host (Windows) : HOST_WORKSPACE_ROOT\run_<id>
     run_dirname = f"run_{run_id}"
     workspace_container_path = CONTAINER_WORKSPACE_ROOT / run_dirname
-    workspace_host_path = f"{HOST_WORKSPACE_ROOT}\\{run_dirname}" if HOST_WORKSPACE_ROOT else None
+    workspace_host_path = os.path.join(HOST_WORKSPACE_ROOT, run_dirname) if HOST_WORKSPACE_ROOT else None
 
     try:
         workspace_container_path.mkdir(parents=True, exist_ok=False)

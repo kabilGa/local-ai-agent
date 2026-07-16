@@ -26,6 +26,8 @@ services:
       LOG_LEVEL: info
     volumes:
       - git_workspace:/tmp/rag-repos
+      # Adam: live source mount - without this, code edits do nothing until rebuild
+      - ../rag:/app/rag
     depends_on:
       qdrant:
         condition: service_healthy

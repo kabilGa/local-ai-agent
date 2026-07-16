@@ -241,7 +241,7 @@
     aBubble.innerHTML='<div class="thinking"><div class="bars"><span></span><span></span><span></span><span></span></div><span class="label">routing & generating…</span></div>';
     aTurn.appendChild(aBubble); aBubble.scrollIntoView({behavior:'smooth',block:'end'});
     try{
-      const resp=await fetch('/v1/agent/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text, project_id:'default', user_id:SESSION_ID})});
+      const resp=await fetch('/v1/agent/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text, project_id:'test', user_id:SESSION_ID})});
       const data=await resp.json();
       if(data.success===false){
         aBubble.innerHTML='<div class="agent-meta"><span class="pill err">error</span></div><div class="content"><p>'+(data.error||'Something went wrong.')+'</p></div>';

@@ -4,6 +4,23 @@ from langgraph.graph import StateGraph, END
 from typing import TypedDict, List, Dict, Any
 
 # Récupération des URLs des autres microservices (avec valeurs par défaut pour le local)
+import re
+
+def _extract_code(text: str) -> str:
+    """Pull only the code out of the model's reply.
+
+    The model answers with prose + a fenced code block. Sending the whole
+    reply to the sandbox makes it try to execute English as Python.
+    """
+    if not text:
+        return ""
+    pairs = re.findall(r"^```(\w*)[ \t]*\r?\n(.*?)^```", text, re.DOTALL | re.MULTILINE)
+    blocks = [body for lang, body in pairs if lang.lower() in ("python", "py", "")]
+    if blocks:
+        return "\n\n".join(b.strip() for b in blocks)
+    return ""
+
+
 RAG_ENGINE_URL = os.getenv("RAG_ENGINE_URL", "http://localhost:8002/v1/retrieve")
 MODEL_GATEWAY_URL = os.getenv("MODEL_GATEWAY_URL", "http://localhost:8003/v1/chat/completions")
 SANDBOX_URL = os.getenv("SANDBOX_URL", "http://localhost:8004/v1/sandbox/execute")
@@ -56,7 +73,7 @@ async def generate_code_patch(state: AgentState):
         
         async with httpx.AsyncClient(timeout=300.0) as client:
             payload = {
-                "model": "codellama", # Ou le modèle choisi par l'étudiant 5
+                "model": "qwen2.5-coder:7b",  # Adam: was "codellama" - the gateway prefix-matched it to codellama:7b (a JS-heavy older model). Ask for the exact tag we want.
                 "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
@@ -89,7 +106,11 @@ async def verify_patch_in_sandbox(state: AgentState):
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
             # On envoie le code généré à la sandbox pour validation (tests syntaxiques ou unitaires)
-            payload = {"code": state["code_patch"], "language": "python"}
+            code_to_run = _extract_code(state["code_patch"])
+            if not code_to_run:
+                steps.append({"step_name": "Execution_Sandbox", "status": "SKIPPED", "summary": "No code block in the answer - nothing to execute."})
+                return {"verification_result": "No code to execute", "steps_track": steps}
+            payload = {"code": code_to_run, "language": "python"}
             response = await client.post(SANDBOX_URL, json=payload)
             
             if response.status_code == 200:

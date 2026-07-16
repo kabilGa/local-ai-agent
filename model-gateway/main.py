@@ -136,7 +136,7 @@ AVAILABLE_MODELS = {
     "codellama:7b-instruct-q4_K_M",
     "phi3:mini",
 }
-DEFAULT_MODEL = "qwen2.5-coder:3b"
+DEFAULT_MODEL = "qwen2.5-coder:7b"
 
 
 def _resolve_model(requested: str | None) -> str:

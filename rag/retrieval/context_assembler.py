@@ -74,6 +74,7 @@ class ContextAssembler:
         for item in primary:
             payload = self._extract_payload(item)
             if not payload:
+                logger.warning("[context] DROPPED chunk - unrecognised shape: type=%s keys=%s", type(item).__name__, list(item.keys()) if isinstance(item, dict) else "n/a")
                 continue
 
             content, was_neutralised = self._sanitize(payload.get("content", ""), payload)
@@ -82,8 +83,17 @@ class ContextAssembler:
 
             tokens = _estimate_tokens(content)
             if tokens > token_budget:
-                logger.warning("[context] Token budget exhausted — stopping at %d chunks", len(context_chunks))
-                break
+                # Adam: was `break` - one oversized chunk killed the whole context,
+                # returning "" while chunks_found still reported 3. Truncate it to
+                # what fits instead, and keep going so smaller chunks still land.
+                per_chunk_cap = max(200, self.max_context_tokens // 3)
+                if token_budget > 200:
+                    content = content[: min(token_budget, per_chunk_cap) * _APPROX_CHARS_PER_TOKEN]
+                    tokens = _estimate_tokens(content)
+                    logger.warning("[context] Chunk too large - truncated to fit %d tokens", tokens)
+                else:
+                    logger.warning("[context] Skipping chunk - %d tokens, only %d left", tokens, token_budget)
+                    continue
 
             context_chunks.append(self._format_chunk(payload, content))
             token_budget -= tokens

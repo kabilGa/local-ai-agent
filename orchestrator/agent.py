@@ -33,6 +33,8 @@ class AgentState(TypedDict):
     context: str          # Rempli par le RAG
     code_patch: str       # Généré par le LLM
     verification_result: str # Rempli par la Sandbox
+    attempts: int
+    files_written: list   # Adam: files the agent created         # Adam: how many times the model has tried
     steps_track: List[Dict[str, Any]] # Pour l'exigence de traçabilité
 
 # 2. NŒUD 1 : Appel au RAG Engine (Étudiant 4)
@@ -67,7 +69,15 @@ async def generate_code_patch(state: AgentState):
             "Always respond in English. "
             "Write any mathematical expressions using LaTeX: inline math "
             "between single dollar signs like $x^2$, and display math between "
-            "double dollar signs like $$\\sum_{i=1}^{n} i$$."
+            "double dollar signs like $$\\sum_{i=1}^{n} i$$. "
+            "IF the user asks you to build, create, or make an application, a "
+            "script, or a project, you MUST output the real files. Give one "
+            "code block per file, and start each block with a marker line "
+            "naming the path, exactly like this:\n"
+            "# FILE: main.py\n"
+            "Use relative paths only (never absolute, never '..'). Keep it "
+            "simple and runnable with the Python standard library only. "
+            "For pure questions or explanations, do NOT use FILE markers."
         )
         user_prompt = f"Contexte du code source :\n{state['context']}\n\nDemande utilisateur : {state['query']}"
         
@@ -128,6 +138,99 @@ async def verify_patch_in_sandbox(state: AgentState):
 # =====================================================================
 # 5. CONSTRUCTION ET COMPILATION DU GRAPH DE WORKFLOW
 # =====================================================================
+# ── Adam: file tools - lets the agent actually create an app on disk ──────────
+AGENT_WORKSPACE = os.getenv("AGENT_WORKSPACE", "agent_workspace")
+
+_FILE_MARKER = re.compile(r"^[#/;<!\-]{0,4}\s*FILE:\s*(.+?)\s*$", re.MULTILINE)
+
+
+def _extract_files(text):
+    """Pull out blocks that start with a '# FILE: path' marker."""
+    from pathlib import PurePosixPath
+    out = {}
+    if not text:
+        return out
+    pairs = re.findall(r"^```(\w*)[ \t]*\r?\n(.*?)^```", text, re.DOTALL | re.MULTILINE)
+    for _lang, body in pairs:
+        m = _FILE_MARKER.search(body[:300])
+        if not m:
+            continue
+        rel = m.group(1).strip().strip('`"\'')
+        # reject anything that tries to escape the workspace
+        pp = PurePosixPath(rel.replace("\\", "/"))
+        if pp.is_absolute() or ".." in pp.parts or not pp.parts:
+            continue
+        out[str(pp)] = body[m.end():].lstrip("\r\n")
+    return out
+
+
+async def write_project_files(state):
+    """Write the generated files into the agent workspace folder."""
+    import os as _os
+    steps = state["steps_track"]
+    files = _extract_files(state.get("code_patch", ""))
+    if not files:
+        steps.append({"step_name": "Write_Files", "status": "SKIPPED",
+                      "summary": "No '# FILE:' markers in the answer - nothing written."})
+        return {"files_written": [], "steps_track": steps}
+    root = _os.path.abspath(AGENT_WORKSPACE)
+    written = []
+    try:
+        for rel, content in files.items():
+            dest = _os.path.join(root, *rel.split("/"))
+            if not _os.path.abspath(dest).startswith(root + _os.sep):
+                continue
+            _os.makedirs(_os.path.dirname(dest), exist_ok=True)
+            with open(dest, "w", encoding="utf-8", newline="\n") as fh:
+                fh.write(content)
+            written.append(rel)
+        steps.append({"step_name": "Write_Files", "status": "SUCCESS",
+                      "summary": "Wrote " + str(len(written)) + " file(s) to " + root + ": " + ", ".join(written)})
+    except Exception as e:
+        steps.append({"step_name": "Write_Files", "status": "CRITICAL_ERROR", "summary": str(e)})
+    return {"files_written": written, "steps_track": steps}
+
+
+MAX_ATTEMPTS = 2
+
+_ERROR_MARKERS = ("Traceback", "SyntaxError", "NameError", "TypeError", "ValueError",
+                  "ModuleNotFoundError", "IndentationError", "AssertionError",
+                  "Exception", "Error:", "error:", "FAILED", "Echec", "Erreur")
+
+
+async def prepare_retry(state: AgentState):
+    """Adam: feed the sandbox error back to the model so it fixes its own code."""
+    steps = state["steps_track"]
+    attempts = state.get("attempts", 1) + 1
+    error_text = (state.get("verification_result") or "")[:1500]
+    commented = "\n".join("# " + ln for ln in error_text.splitlines())
+    new_context = (
+        state.get("context", "")
+        + "\n\n# ---- YOUR PREVIOUS ATTEMPT FAILED ----\n"
+        + "# The sandbox ran your last code and it failed with this error:\n"
+        + commented
+        + "\n# Fix it. Use only the Python standard library (no pip installs).\n"
+        + "# Return the corrected, complete code in ONE python code block.\n"
+    )
+    steps.append({
+        "step_name": "Retry_" + str(attempts),
+        "status": "SUCCESS",
+        "summary": "Attempt " + str(attempts - 1) + " failed - regenerating with the error as feedback.",
+    })
+    return {"context": new_context, "attempts": attempts, "steps_track": steps}
+
+
+def should_retry(state: AgentState) -> str:
+    """Loop back to the model if the sandbox failed and attempts remain."""
+    result = state.get("verification_result") or ""
+    attempts = state.get("attempts", 1)
+    if "No code to execute" in result:
+        return "end"
+    if any(m in result for m in _ERROR_MARKERS) and attempts < MAX_ATTEMPTS:
+        return "retry"
+    return "end"
+
+
 workflow = StateGraph(AgentState)
 
 # Ajout des briques (nœuds)
@@ -139,7 +242,18 @@ workflow.add_node("verify_patch", verify_patch_in_sandbox)
 workflow.set_entry_point("retrieve_context")
 workflow.add_edge("retrieve_context", "generate_patch")
 workflow.add_edge("generate_patch", "verify_patch")
-workflow.add_edge("verify_patch", END)
+workflow.add_node("prepare_retry", prepare_retry)
+
+# Adam: was a straight line (verify -> END), so the agent never fixed its own
+# mistakes. Now the sandbox error loops back into the model.
+workflow.add_conditional_edges(
+    "verify_patch",
+    should_retry,
+    {"retry": "prepare_retry", "end": "write_files"},
+)
+workflow.add_edge("prepare_retry", "generate_patch")
+workflow.add_node("write_files", write_project_files)
+workflow.add_edge("write_files", END)
 
 # Compilation du graphe asynchrone
 agent_orchestrator = workflow.compile()

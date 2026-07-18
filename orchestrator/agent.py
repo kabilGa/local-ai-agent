@@ -34,7 +34,9 @@ class AgentState(TypedDict):
     code_patch: str       # Généré par le LLM
     verification_result: str # Rempli par la Sandbox
     attempts: int
-    files_written: list   # Adam: files the agent created         # Adam: how many times the model has tried
+    files_written: list
+    plan: list            # Adam: the planned file list
+    current_step: int     # Adam: which file we are on   # Adam: files the agent created         # Adam: how many times the model has tried
     steps_track: List[Dict[str, Any]] # Pour l'exigence de traçabilité
 
 # 2. NŒUD 1 : Appel au RAG Engine (Étudiant 4)
@@ -150,6 +152,9 @@ def _extract_files(text):
     out = {}
     if not text:
         return out
+    # Adam: models often put the marker just ABOVE the fence - pull it inside.
+    text = re.sub(r"(?m)^[#/;<!\-]{0,4}[ \t]*FILE:[ \t]*(.+?)[ \t]*\r?\n\s*```(\w*)[ \t]*\r?\n",
+                  lambda m: "```" + m.group(2) + "\n# FILE: " + m.group(1) + "\n", text)
     pairs = re.findall(r"^```(\w*)[ \t]*\r?\n(.*?)^```", text, re.DOTALL | re.MULTILINE)
     for _lang, body in pairs:
         m = _FILE_MARKER.search(body[:300])
@@ -198,6 +203,210 @@ _ERROR_MARKERS = ("Traceback", "SyntaxError", "NameError", "TypeError", "ValueEr
                   "Exception", "Error:", "error:", "FAILED", "Echec", "Erreur")
 
 
+# ── Adam: planner - build multi-file projects one file at a time ─────────────
+_BUILD_WORDS = ("build", "create", "make me", "generate", "app", "application",
+                "project", "database", "system", "script for")
+
+PLANNER_MODEL = os.getenv("PLANNER_MODEL", "qwen2.5-coder:7b")
+STEP_MODEL = os.getenv("STEP_MODEL", "qwen2.5-coder:7b")  # Adam: 3b wrote files that did not fit together
+
+
+def _looks_like_build(query):
+    q = (query or "").lower()
+    return any(w in q for w in _BUILD_WORDS)
+
+
+def route_after_retrieve(state):
+    """Build request -> planner. Question -> the normal single-pass path."""
+    return "plan" if _looks_like_build(state.get("query", "")) else "single"
+
+
+async def _ask_model(model, system, user, timeout=300.0):
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        resp = await client.post(MODEL_GATEWAY_URL, json={
+            "model": model,
+            "messages": [{"role": "system", "content": system},
+                         {"role": "user", "content": user}],
+            "temperature": 0.0,
+        })
+        if resp.status_code != 200:
+            raise RuntimeError("Model gateway HTTP " + str(resp.status_code))
+        return resp.json()["choices"][0]["message"]["content"]
+
+
+async def plan_project(state):
+    """First pass: decide WHICH files to write, no code yet."""
+    import json as _json
+    steps = state["steps_track"]
+    system = ("You are a software architect. Break the request into a small list "
+              "of files. Return ONLY a JSON array - no prose, no markdown fences. "
+              "Each item must be {\"file\": \"relative/path.py\", \"purpose\": \"one sentence\"}. "
+              "Maximum 4 files. Relative paths only. Python standard library only.")
+    try:
+        raw = await _ask_model(PLANNER_MODEL, system, "Request: " + state["query"])
+        m = re.search(r"\[.*\]", raw, re.DOTALL)
+        plan = _json.loads(m.group(0)) if m else []
+        plan = [x for x in plan if isinstance(x, dict) and x.get("file")][:4]
+    except Exception as e:
+        steps.append({"step_name": "Planner", "status": "FAILED", "summary": str(e)[:200]})
+        return {"plan": [], "current_step": 0, "steps_track": steps}
+    if not plan:
+        steps.append({"step_name": "Planner", "status": "SKIPPED",
+                      "summary": "No usable plan - falling back to single file."})
+        return {"plan": [], "current_step": 0, "steps_track": steps}
+    names = ", ".join(x["file"] for x in plan)
+    steps.append({"step_name": "Planner", "status": "SUCCESS",
+                  "summary": "Plan: " + str(len(plan)) + " file(s) - " + names})
+    return {"plan": plan, "current_step": 0, "code_patch": "", "steps_track": steps}
+
+
+async def generate_step(state):
+    """Write ONE file, with the previously written files in context."""
+    import json as _json
+    steps = state["steps_track"]
+    plan = state.get("plan", [])
+    i = state.get("current_step", 0)
+    if i >= len(plan):
+        return {"steps_track": steps}
+    item = plan[i]
+    fname = item.get("file", "main.py")
+    so_far = state.get("code_patch", "")
+    system = ("You are an expert Python developer. Write ONE file only. "
+              "Start with the marker line '# FILE: " + fname + "' then the code "
+              "in a single python code block. No explanation before or after. "
+              "Python standard library only.\n"
+              "RULES - a reviewer will reject the file if you break these:\n"
+              "1. IMPORT EVERY MODULE YOU USE. If you write math.sin you must "
+              "have 'import math' at the top of THIS file. Check every name.\n"
+              "2. Only call functions that actually exist in the files already "
+              "written. Match their exact signatures. Do not invent methods.\n"
+              "3. Do not redefine anything already defined in another file.\n"
+              "4. Write complete, working code - no placeholders or TODOs.\n"
+              "5. Re-read your file before finishing: would it run as-is?\n"
+              "6. The FIRST line inside the code block MUST be exactly: # FILE: " + fname)
+    user = ("Project request: " + state["query"] + "\n\nFull plan: " + _json.dumps(plan)
+            + "\n\nFiles written so far:\n" + (so_far[:4000] if so_far else "(none yet)")
+            + "\n\nNow write ONLY: " + fname + "\nPurpose: " + str(item.get("purpose", "")))
+    try:
+        content = await _ask_model(STEP_MODEL, system, user)
+        steps.append({"step_name": "Build_" + str(i + 1) + ": " + fname,
+                      "status": "SUCCESS", "summary": "Generated " + fname})
+        return {"code_patch": (so_far + "\n\n" + content).strip(),
+                "current_step": i + 1, "steps_track": steps}
+    except Exception as e:
+        steps.append({"step_name": "Build_" + str(i + 1) + ": " + fname,
+                      "status": "FAILED", "summary": str(e)[:200]})
+        return {"current_step": i + 1, "steps_track": steps}
+
+
+async def check_files(state):
+
+    """Adam: compile each generated file and report undefined names.
+
+    The sandbox cannot import tkinter, so this is the only real feedback."""
+
+    import ast as _ast
+
+    steps = state["steps_track"]
+
+    files = _extract_files(state.get("code_patch", ""))
+
+    problems = []
+
+    for name, src in files.items():
+
+        try:
+
+            tree = _ast.parse(src)
+
+        except SyntaxError as e:
+
+            problems.append(name + ": SyntaxError line " + str(e.lineno) + " - " + str(e.msg))
+
+            continue
+
+        imported = set()
+
+        for n in _ast.walk(tree):
+
+            if isinstance(n, _ast.Import):
+
+                imported.update(a.asname or a.name.split(".")[0] for a in n.names)
+
+            elif isinstance(n, _ast.ImportFrom):
+
+                imported.update(a.asname or a.name for a in n.names)
+
+        used = {n.value.id for n in _ast.walk(tree)
+
+                if isinstance(n, _ast.Attribute) and isinstance(n.value, _ast.Name)}
+        # Adam: also catch bare use like {"math": math}, not just math.sin
+        used |= {n.id for n in _ast.walk(tree)
+                 if isinstance(n, _ast.Name) and isinstance(n.ctx, _ast.Load)}
+
+        assigned = {n.id for n in _ast.walk(tree)
+
+                    if isinstance(n, _ast.Name) and isinstance(n.ctx, _ast.Store)}
+
+        assigned |= {n.name for n in _ast.walk(tree)
+
+                     if isinstance(n, (_ast.FunctionDef, _ast.AsyncFunctionDef, _ast.ClassDef))}
+
+        args = {a.arg for n in _ast.walk(tree)
+
+                if isinstance(n, (_ast.FunctionDef, _ast.AsyncFunctionDef))
+
+                for a in n.args.args}
+
+        for mod in ("math", "os", "sys", "json", "random", "time", "sqlite3", "re"):
+
+            if mod in used and mod not in imported and mod not in assigned and mod not in args:
+
+                problems.append(name + ": uses '" + mod + "' but never imports it")
+
+    if problems:
+
+        steps.append({"step_name": "Code_Check", "status": "FAILED",
+
+                      "summary": "; ".join(problems[:4])})
+
+    else:
+
+        steps.append({"step_name": "Code_Check", "status": "SUCCESS",
+
+                      "summary": "All " + str(len(files)) + " file(s) compile, imports look complete."})
+
+    return {"verification_result": ("CODE CHECK FAILED: " + "; ".join(problems)) if problems else "checks passed",
+
+            "steps_track": steps}
+
+async def rebuild_with_errors(state):
+    """Adam: the checker found broken files - rebuild them with the errors."""
+    steps = state["steps_track"]
+    attempts = state.get("attempts", 1) + 1
+    errs = (state.get("verification_result") or "")[:1200]
+    new_ctx = (state.get("context", "")
+               + "\n\n# ---- YOUR LAST BUILD WAS REJECTED ----\n# "
+               + errs.replace("\n", "\n# ")
+               + "\n# Fix every one of these. Import every module you use.\n")
+    steps.append({"step_name": "Rebuild_" + str(attempts),
+                  "status": "SUCCESS",
+                  "summary": "Code check failed - rebuilding with the errors as feedback."})
+    return {"context": new_ctx, "attempts": attempts, "current_step": 0,
+            "code_patch": "", "steps_track": steps}
+
+
+def build_ok(state):
+    r = state.get("verification_result") or ""
+    if "CODE CHECK FAILED" in r and state.get("attempts", 1) < MAX_ATTEMPTS:
+        return "rebuild"
+    return "ok"
+
+
+def more_steps(state):
+    return "next" if state.get("current_step", 0) < len(state.get("plan", [])) else "done"
+
+
 async def prepare_retry(state: AgentState):
     """Adam: feed the sandbox error back to the model so it fixes its own code."""
     steps = state["steps_track"]
@@ -226,6 +435,12 @@ def should_retry(state: AgentState) -> str:
     attempts = state.get("attempts", 1)
     if "No code to execute" in result:
         return "end"
+    # Adam: never retry an environment limit - the sandbox is headless and
+    # read-only, so tkinter/GUI/file errors are not the model's fault.
+    if any(k in result for k in ("libtk", "_tkinter", "no display name",
+                                 "DISPLAY", "unable to open database file",
+                                 "Read-only file system")):
+        return "end"
     if any(m in result for m in _ERROR_MARKERS) and attempts < MAX_ATTEMPTS:
         return "retry"
     return "end"
@@ -240,7 +455,25 @@ workflow.add_node("verify_patch", verify_patch_in_sandbox)
 
 # Définition du cheminement (edges)
 workflow.set_entry_point("retrieve_context")
-workflow.add_edge("retrieve_context", "generate_patch")
+workflow.add_node("plan_project", plan_project)
+workflow.add_node("generate_step", generate_step)
+
+# Adam: build requests go through the planner and are generated file by file.
+# Questions keep the old single-pass path.
+workflow.add_conditional_edges("retrieve_context", route_after_retrieve,
+                               {"plan": "plan_project", "single": "generate_patch"})
+workflow.add_conditional_edges("plan_project",
+                               lambda st: "step" if st.get("plan") else "single",
+                               {"step": "generate_step", "single": "generate_patch"})
+workflow.add_conditional_edges("generate_step", more_steps,
+                               {"next": "generate_step", "done": "check_files"})
+workflow.add_node("verify_build", verify_patch_in_sandbox)
+workflow.add_node("check_files", check_files)
+workflow.add_node("rebuild_with_errors", rebuild_with_errors)
+workflow.add_conditional_edges("check_files", build_ok,
+                               {"rebuild": "rebuild_with_errors", "ok": "write_files"})
+workflow.add_edge("rebuild_with_errors", "generate_step")
+workflow.add_edge("verify_build", "write_files")
 workflow.add_edge("generate_patch", "verify_patch")
 workflow.add_node("prepare_retry", prepare_retry)
 

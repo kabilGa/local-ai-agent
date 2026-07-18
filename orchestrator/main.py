@@ -24,6 +24,7 @@ class AgentStepTrack(BaseModel):
 class AgentChatResponse(BaseModel):
     response: str = Field(..., description="Le message explicatif final ou le patch de code corrigé")
     steps: List[AgentStepTrack] = Field(..., description="Historique d'exécution des outils (Exigence de traçabilité)")
+    staged_files: dict = Field(default_factory=dict, description="Adam: files awaiting user confirmation (human-in-the-loop)")
 
 @app.post(
     "/v1/agent/chat", 
@@ -52,8 +53,25 @@ async def process_agent_logic(payload: AgentChatRequest):
     
     return AgentChatResponse(
         response=final_text,
-        steps=final_state["steps_track"]
+        steps=final_state["steps_track"],
+        staged_files=final_state.get("staged_files", {}),
     )
+
+
+# ── Adam: human-in-the-loop apply endpoint (cahier des charges 3.2) ──────────
+from fastapi import Request as _Req
+from .agent import apply_files_to_disk
+
+
+@app.post("/v1/agent/apply")
+async def apply_endpoint(req: _Req):
+    body = await req.json()
+    files = body.get("staged_files") or {}
+    if not files:
+        return {"written": [], "root": "", "message": "No files to write."}
+    written, root = apply_files_to_disk(files)
+    return {"written": written, "root": root,
+            "message": "Wrote " + str(len(written)) + " file(s) to " + root}
 
 
 # ── Streaming endpoint (Adam): emits progress after each graph node via SSE ────

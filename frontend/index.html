@@ -260,6 +260,27 @@
         const contentEl = aBubble.querySelector('.content');
         try{ renderMathInElement(contentEl,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}],throwOnError:false}); }catch(e){}
         contentEl.querySelectorAll('pre code').forEach(b=>{try{hljs.highlightElement(b);}catch(e){}});
+        // ── Adam: human-in-the-loop confirm (cahier des charges 3.2) ──
+        const staged = data.staged_files || {};
+        const names = Object.keys(staged);
+        if(names.length){
+          const panel=document.createElement('div');
+          panel.style.cssText='margin-top:12px;padding:12px;border-radius:9px;border:1px solid #2a3340;background:rgba(61,220,151,.06)';
+          panel.innerHTML='<div style="font-size:13px;color:#cfd8e3;margin-bottom:8px">The agent wants to write <b>'+names.length+'</b> file(s) to disk:</div><div style="font-family:monospace;font-size:12px;color:#3ddc97;margin-bottom:10px">'+names.map(n=>'• '+n).join('<br>')+'</div><button class="cf-yes" style="padding:7px 16px;margin-right:8px;border:none;border-radius:7px;background:#3ddc97;color:#0a0e14;font-weight:600;cursor:pointer">Confirm &amp; write</button><button class="cf-no" style="padding:7px 16px;border:1px solid #3a4450;border-radius:7px;background:transparent;color:#cfd8e3;cursor:pointer">Reject</button><div class="cf-result" style="margin-top:9px;font-size:12px;color:#8fa"></div>';
+          aBubble.appendChild(panel);
+          const res=panel.querySelector('.cf-result');
+          panel.querySelector('.cf-yes').onclick=async()=>{
+            res.textContent='Writing…';
+            try{
+              const r=await fetch('/v1/agent/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({staged_files:staged})});
+              const d=await r.json();
+              res.textContent='\u2713 '+(d.message||'Done.');
+              panel.querySelector('.cf-yes').disabled=true;
+              panel.querySelector('.cf-no').disabled=true;
+            }catch(e){ res.textContent='Failed to write: '+e; }
+          };
+          panel.querySelector('.cf-no').onclick=()=>{ panel.remove(); };
+        }
       }
     }catch(e){
       aBubble.innerHTML='<div class="agent-meta"><span class="pill err">offline</span></div><div class="content"><p>Could not reach the gateway. Is it running?</p></div>';

@@ -276,6 +276,21 @@ class OrchestratorRequest(BaseModel):
 class OrchestratorResponse(BaseModel):
     response: str
     steps: list = []
+    staged_files: dict = {}   # Adam: files awaiting user confirmation
+
+
+@app.post("/v1/agent/apply")
+def agent_apply(request: dict, identity: str = Depends(require_auth)):
+    """Adam: human-in-the-loop - forward the confirmed files to the orchestrator
+    to be written to disk (cahier des charges 3.2)."""
+    import httpx
+    url = os.environ.get("ORCHESTRATOR_APPLY_URL", "http://localhost:8001/v1/agent/apply")
+    try:
+        with httpx.Client(timeout=60.0) as client:
+            r = client.post(url, json={"staged_files": request.get("staged_files", {})})
+        return r.json()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Could not reach orchestrator: {e}")
 
 
 @app.post("/v1/agent/chat", response_model=OrchestratorResponse)
@@ -316,6 +331,7 @@ def agent_chat(request: OrchestratorRequest, identity: str = Depends(require_aut
             return OrchestratorResponse(
                 response=data.get("response", ""),
                 steps=data.get("steps", []),
+                staged_files=data.get("staged_files", {}),
             )
         else:
             log.warning(f"Orchestrator returned {resp.status_code}; falling back to direct routing.")

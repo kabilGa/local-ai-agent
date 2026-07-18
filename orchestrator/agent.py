@@ -35,6 +35,7 @@ class AgentState(TypedDict):
     verification_result: str # Rempli par la Sandbox
     attempts: int
     files_written: list
+    staged_files: dict     # Adam: files awaiting user confirmation
     plan: list            # Adam: the planned file list
     current_step: int     # Adam: which file we are on   # Adam: files the agent created         # Adam: how many times the model has tried
     steps_track: List[Dict[str, Any]] # Pour l'exigence de traçabilité
@@ -169,31 +170,36 @@ def _extract_files(text):
     return out
 
 
-async def write_project_files(state):
-    """Write the generated files into the agent workspace folder."""
+def apply_files_to_disk(files):
+    """Adam: the ACTUAL write - called only after the user confirms."""
     import os as _os
+    root = _os.path.abspath(AGENT_WORKSPACE)
+    written = []
+    for rel, content in files.items():
+        dest = _os.path.join(root, *rel.split("/"))
+        if not _os.path.abspath(dest).startswith(root + _os.sep):
+            continue
+        _os.makedirs(_os.path.dirname(dest), exist_ok=True)
+        with open(dest, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(content)
+        written.append(rel)
+    return written, root
+
+
+async def write_project_files(state):
+    """Adam: human-in-the-loop (cahier des charges 3.2). We do NOT write here.
+    We STAGE the files and wait for the user to confirm. The actual write
+    happens in apply_files_to_disk via the /v1/agent/apply endpoint."""
     steps = state["steps_track"]
     files = _extract_files(state.get("code_patch", ""))
     if not files:
         steps.append({"step_name": "Write_Files", "status": "SKIPPED",
-                      "summary": "No '# FILE:' markers in the answer - nothing written."})
-        return {"files_written": [], "steps_track": steps}
-    root = _os.path.abspath(AGENT_WORKSPACE)
-    written = []
-    try:
-        for rel, content in files.items():
-            dest = _os.path.join(root, *rel.split("/"))
-            if not _os.path.abspath(dest).startswith(root + _os.sep):
-                continue
-            _os.makedirs(_os.path.dirname(dest), exist_ok=True)
-            with open(dest, "w", encoding="utf-8", newline="\n") as fh:
-                fh.write(content)
-            written.append(rel)
-        steps.append({"step_name": "Write_Files", "status": "SUCCESS",
-                      "summary": "Wrote " + str(len(written)) + " file(s) to " + root + ": " + ", ".join(written)})
-    except Exception as e:
-        steps.append({"step_name": "Write_Files", "status": "CRITICAL_ERROR", "summary": str(e)})
-    return {"files_written": written, "steps_track": steps}
+                      "summary": "No '# FILE:' markers in the answer - nothing to write."})
+        return {"staged_files": {}, "files_written": [], "steps_track": steps}
+    steps.append({"step_name": "Write_Files", "status": "PENDING",
+                  "summary": "Ready to write " + str(len(files)) + " file(s): "
+                             + ", ".join(files.keys()) + " - awaiting your confirmation."})
+    return {"staged_files": files, "files_written": [], "steps_track": steps}
 
 
 MAX_ATTEMPTS = 2
@@ -364,6 +370,34 @@ async def check_files(state):
 
                 problems.append(name + ": uses '" + mod + "' but never imports it")
 
+        # Adam: signature check - catch calls with too few/many args across files
+        import ast as _ast2
+        defs = {}
+        for _src in files.values():
+            try:
+                _t = _ast2.parse(_src)
+            except SyntaxError:
+                continue
+            for _n in _ast2.walk(_t):
+                if isinstance(_n, (_ast2.FunctionDef, _ast2.AsyncFunctionDef)):
+                    _req = len(_n.args.args) - len(_n.args.defaults)
+                    _tot = len(_n.args.args)
+                    defs[_n.name] = (_req, _tot, _n.args.vararg is not None)
+        for _name, _src in files.items():
+            try:
+                _t = _ast2.parse(_src)
+            except SyntaxError:
+                continue
+            for _n in _ast2.walk(_t):
+                if isinstance(_n, _ast2.Call) and isinstance(_n.func, _ast2.Name):
+                    _fn = _n.func.id
+                    if _fn in defs and not _n.keywords:
+                        _req, _tot, _star = defs[_fn]
+                        _given = len(_n.args)
+                        _self = 1 if ("self" not in [a for a in []] ) else 0
+                        if _given < _req or (not _star and _given > _tot):
+                            problems.append(_name + ": calls " + _fn + "() with " + str(_given)
+                                            + " args but it needs " + str(_req) + "-" + str(_tot))
     if problems:
 
         steps.append({"step_name": "Code_Check", "status": "FAILED",

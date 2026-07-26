@@ -4,24 +4,7 @@ from langgraph.graph import StateGraph, END
 from typing import TypedDict, List, Dict, Any
 
 # Récupération des URLs des autres microservices (avec valeurs par défaut pour le local)
-import re
-
-def _extract_code(text: str) -> str:
-    """Pull only the code out of the model's reply.
-
-    The model answers with prose + a fenced code block. Sending the whole
-    reply to the sandbox makes it try to execute English as Python.
-    """
-    if not text:
-        return ""
-    pairs = re.findall(r"^```(\w*)[ \t]*\r?\n(.*?)^```", text, re.DOTALL | re.MULTILINE)
-    blocks = [body for lang, body in pairs if lang.lower() in ("python", "py", "")]
-    if blocks:
-        return "\n\n".join(b.strip() for b in blocks)
-    return ""
-
-
-RAG_ENGINE_URL = os.getenv("RAG_ENGINE_URL", "http://localhost:8002/v1/retrieve")
+RAG_ENGINE_URL = os.getenv("RAG_ENGINE_URL", "http://localhost:8002/v1/context/retrieve")
 MODEL_GATEWAY_URL = os.getenv("MODEL_GATEWAY_URL", "http://localhost:8003/v1/chat/completions")
 SANDBOX_URL = os.getenv("SANDBOX_URL", "http://localhost:8004/v1/sandbox/execute")
 
@@ -40,12 +23,12 @@ async def retrieve_code_context(state: AgentState):
     steps = state.get("steps_track", [])
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            payload = {"query": state["query"], "user_id": state.get("user_id", "orchestrator"), "project_ids": [state["project_id"]], "allowed_roles": ["developer"], "top_k": 5}
+            payload = {"query": state["query"], "project_id": state["project_id"]}
             response = await client.post(RAG_ENGINE_URL, json=payload)
             
             if response.status_code == 200:
                 data = response.json()
-                context = data.get("assembled_context", "Aucun code pertinent trouvé.")
+                context = data.get("context", "Aucun code pertinent trouvé.")
                 steps.append({"step_name": "RAG_Engine", "status": "SUCCESS", "summary": "Code source pertinent récupéré avec succès."})
                 return {"context": context, "steps_track": steps}
             else:
@@ -61,19 +44,15 @@ async def generate_code_patch(state: AgentState):
     try:
         # Construction du prompt technique incluant le contexte du RAG
         system_prompt = (
-            "You are an expert software development AI agent. "
-            "Analyze the provided source code and propose a fix (patch) "
-            "as a clean code block to resolve the user's request. "
-            "Always respond in English. "
-            "Write any mathematical expressions using LaTeX: inline math "
-            "between single dollar signs like $x^2$, and display math between "
-            "double dollar signs like $$\\sum_{i=1}^{n} i$$."
+            "Tu es un agent IA expert en développement logiciel. "
+            "Analyse le code source fourni ci-dessous et propose un correctif (patch) "
+            "sous forme de bloc de code propre pour résoudre la demande de l'utilisateur."
         )
         user_prompt = f"Contexte du code source :\n{state['context']}\n\nDemande utilisateur : {state['query']}"
         
-        async with httpx.AsyncClient(timeout=300.0) as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             payload = {
-                "model": "qwen2.5-coder:7b",  # Adam: was "codellama" - the gateway prefix-matched it to codellama:7b (a JS-heavy older model). Ask for the exact tag we want.
+                "model": "codellama", # Ou le modèle choisi par l'étudiant 5
                 "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
@@ -104,13 +83,9 @@ async def verify_patch_in_sandbox(state: AgentState):
         return {"verification_result": "Non testé", "steps_track": steps}
         
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             # On envoie le code généré à la sandbox pour validation (tests syntaxiques ou unitaires)
-            code_to_run = _extract_code(state["code_patch"])
-            if not code_to_run:
-                steps.append({"step_name": "Execution_Sandbox", "status": "SKIPPED", "summary": "No code block in the answer - nothing to execute."})
-                return {"verification_result": "No code to execute", "steps_track": steps}
-            payload = {"code": code_to_run, "language": "python"}
+            payload = {"code": state["code_patch"], "language": "python"}
             response = await client.post(SANDBOX_URL, json=payload)
             
             if response.status_code == 200:
